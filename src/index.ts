@@ -29,6 +29,7 @@ import {
 	WIN_RATE_PANEL_WIDTH
 } from "./constants"
 import { MenuManager } from "./menu"
+import { HeroDataResponse } from "./models/heroDataTypes"
 import {
 	getCurrentHeroPosition,
 	getCurrentWinRateRank,
@@ -68,8 +69,8 @@ new (class CMetaTracker {
 			this.isDestroyingHUD = false
 		}
 	}
-	protected OnFullHeroGlobalDataUpdated(obj: any): void {
-		console.log("OnFullHeroGlobalDataUpdated", obj)
+	protected OnFullHeroGlobalDataUpdated(arr: HeroDataResponse[]): void {
+		console.log("OnFullHeroGlobalDataUpdated", arr)
 	}
 	private isValidPanel(panel: Nullable<IUIPanel>): panel is IUIPanel {
 		return (

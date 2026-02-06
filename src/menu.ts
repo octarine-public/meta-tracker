@@ -1,55 +1,39 @@
 import { Menu } from "github.com/octarine-public/wrapper/index"
 
 import { CHART_ICON } from "./constants"
-import {
-	HeroPositions,
-	PeriodOptions,
-	PeriodValues,
-	PositionLabelList,
-	RankOptions,
-	setCurrentHeroPosition,
-	setCurrentWinRatePeriod,
-	setCurrentWinRateRank
-} from "./winRates"
+import { DotaPlusMenu } from "./menu/dotaPlus"
+import { StratzMenu } from "./menu/stratz"
 
 export class MenuManager {
 	public readonly State: Menu.Toggle
-	private readonly winRatePeriodDropdown: Menu.Dropdown
-	private readonly winRateRankDropdown: Menu.Dropdown
-	private readonly winRatePositionDropdown: Menu.Dropdown
 
-	private readonly baseMenu = Menu.AddEntryDeep(
-		["Visual", "Meta tracker"],
-		[CHART_ICON]
-	)
+	public readonly stratzMenu: StratzMenu
+	public readonly dotaPlusMenu: DotaPlusMenu
+	private readonly statsType: Menu.Dropdown
+
+	private readonly tree = Menu.AddEntryDeep(["Visual", "Meta tracker"], [CHART_ICON])
 
 	constructor() {
-		this.State = this.baseMenu.AddToggle("State", true)
-		this.baseMenu.SortNodes = false
-		this.winRatePeriodDropdown = this.baseMenu.AddDropdown(
-			"Sort by win rate period",
-			PeriodOptions,
-			1
-		)
-		// 0 = ALL, 1 = HERALD, ... 8 = IMMORTAL; default ALL
-		this.winRateRankDropdown = this.baseMenu.AddDropdown(
-			"Sort by win rate rank",
-			RankOptions
-		)
-		this.winRatePositionDropdown = this.baseMenu.AddDropdown(
-			"Sort by win rate position",
-			PositionLabelList
-		)
-		this.State.OnValue(() => this.syncStateFromMenu())
-		this.winRatePeriodDropdown.OnValue(() => this.syncStateFromMenu())
-		this.winRateRankDropdown.OnValue(() => this.syncStateFromMenu())
-		this.winRatePositionDropdown.OnValue(() => this.syncStateFromMenu())
-		this.syncStateFromMenu()
+		this.State = this.tree.AddToggle("State", true)
+		this.tree.SortNodes = false
+		this.statsType = this.tree.AddDropdown("Stats type", ["Dota 2", "Stratz"])
+
+		this.stratzMenu = new StratzMenu(this.tree)
+		this.dotaPlusMenu = new DotaPlusMenu(this.tree)
+		this.statsType.OnValue(cb => this.statsTypeChanged(cb))
 	}
 
-	private syncStateFromMenu(): void {
-		setCurrentWinRatePeriod(PeriodValues[this.winRatePeriodDropdown.SelectedID])
-		setCurrentWinRateRank(RankOptions[this.winRateRankDropdown.SelectedID])
-		setCurrentHeroPosition(HeroPositions[this.winRatePositionDropdown.SelectedID])
+	private statsTypeChanged(call: Menu.Dropdown): void {
+		switch (call.SelectedID) {
+			case 0:
+				this.stratzMenu.SetVisible(false)
+				this.dotaPlusMenu.SetVisible(true)
+				break
+			case 1:
+				this.stratzMenu.SetVisible(true)
+				this.dotaPlusMenu.SetVisible(false)
+				break
+		}
+		this.tree.Update(true)
 	}
 }

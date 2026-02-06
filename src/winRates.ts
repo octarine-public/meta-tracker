@@ -28,6 +28,17 @@ export const RANKS = [
 	"IMMORTAL"
 ] as const
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
+export const RANKS_DOTA_PLUS = [
+	"HERALD",
+	"GUARDIAN",
+	"CRUSADER",
+	"ARCHON",
+	"LEGEND",
+	"ANCIENT",
+	"DIVINE"
+]
+
 export type WinRateRank = (typeof RankOptions)[number]
 export type HeroPosition = (typeof HeroPositions)[number]
 export const HeroPositions = [1, 2, 3, 4, 5] as const
