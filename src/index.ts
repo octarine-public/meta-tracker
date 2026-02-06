@@ -2,6 +2,7 @@ import "./translations"
 
 import {
 	DOTAGameUIState,
+	Events,
 	EventsSDK,
 	GameRules,
 	GameState,
@@ -43,10 +44,33 @@ new (class CMetaTracker {
 	constructor() {
 		this.menu.State.OnValue(() => this.applyWinRatesToHeroGrid())
 		EventsSDK.on("PostDataUpdate", this.OnPostDataUpdate.bind(this))
-		Panorama.SetWindowDestroyCallback(this.OnWindowDestroy.bind(this))
-		Panorama.SetWindowCreateCallback(this.OnWindowCreate.bind(this))
+		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
+		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
+		Events.on(
+			"DOTAFullHeroGlobalDataUpdated",
+			this.OnFullHeroGlobalDataUpdated.bind(this)
+		)
 	}
-
+	protected OnPostDataUpdate(): void {
+		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
+		if (GameRules && !isDashboard && GameRules.IsInGame) {
+			return
+		}
+		this.applyWinRatesToHeroGrid()
+	}
+	protected PanoramaWindowDestroy(name: string): void {
+		if (name === "DotaHud") {
+			this.isDestroyingHUD = true
+		}
+	}
+	protected PanoramaWindowCreate(name: string): void {
+		if (name === "DotaHud") {
+			this.isDestroyingHUD = false
+		}
+	}
+	protected OnFullHeroGlobalDataUpdated(obj: any): void {
+		console.log("OnFullHeroGlobalDataUpdated", obj)
+	}
 	private isValidPanel(panel: Nullable<IUIPanel>): panel is IUIPanel {
 		return (
 			panel !== undefined &&
@@ -363,23 +387,6 @@ new (class CMetaTracker {
 			}
 			const winRate = this.getWinRateByHeroId(heroID)
 			this.applyWinRateToCard(card, winRate, heroID)
-		}
-	}
-	private OnPostDataUpdate(): void {
-		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
-		if (GameRules && !isDashboard && GameRules.IsInGame) {
-			return
-		}
-		this.applyWinRatesToHeroGrid()
-	}
-	private OnWindowDestroy(name: string): void {
-		if (name === "DotaHud") {
-			this.isDestroyingHUD = true
-		}
-	}
-	private OnWindowCreate(name: string): void {
-		if (name === "DotaHud") {
-			this.isDestroyingHUD = false
 		}
 	}
 })()
