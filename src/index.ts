@@ -6,6 +6,7 @@ import {
 	EventsSDK,
 	GameRules,
 	GameState,
+	Menu,
 	UnitData
 } from "github.com/octarine-public/wrapper/index"
 
@@ -21,6 +22,12 @@ import {
 	PICK_RATE_PANEL_WIDTH,
 	TIER_BG_COLORS,
 	TIER_LABEL_ID,
+	TIER_LEGEND_BADGE_SIZE,
+	TIER_LEGEND_DESC_FONT_SIZE,
+	TIER_LEGEND_PANEL_ID,
+	TIER_LEGEND_TITLE_FONT_SIZE,
+	TIER_LEGEND_WIDTH,
+	TIER_ORDER,
 	TIER_PANEL_ID,
 	TIER_PANEL_WIDTH,
 	WIN_RATE_COLORS,
@@ -49,6 +56,7 @@ new (class CMetaTracker {
 	private isDestroyingHUD = false
 
 	constructor() {
+		Events.on("SetLanguage", this.OnSetLanguage.bind(this))
 		EventsSDK.on("PostDataUpdate", this.OnPostDataUpdate.bind(this))
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
@@ -56,6 +64,10 @@ new (class CMetaTracker {
 			"DOTAFullHeroGlobalDataUpdated",
 			this.OnFullHeroGlobalDataUpdated.bind(this)
 		)
+		this.applyInformation()
+	}
+	protected OnSetLanguage(): void {
+		this.applyInformation()
 	}
 	protected OnPostDataUpdate(): void {
 		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
@@ -396,6 +408,9 @@ new (class CMetaTracker {
 		if (this.isDestroyingHUD && !isDashboard) {
 			return
 		}
+		if (isDashboard) {
+			this.applyInformation()
+		}
 		const cards = this.collectHeroCardPanels(root)
 		for (let i = cards.length - 1; i > -1; i--) {
 			const card = cards[i]
@@ -405,6 +420,147 @@ new (class CMetaTracker {
 			}
 			const winRate = this.getWinRateByHeroId(heroID)
 			this.applyWinRateToCard(card, winRate, heroID)
+		}
+	}
+	private getTierLegendText(
+		key: "Tier legend" | "Tier S" | "Tier A" | "Tier B" | "Tier C" | "Tier D"
+	): string {
+		return Menu.Localization.Localize(key)
+	}
+
+	private updateTierLegendLabels(legendRoot: IUIPanel): void {
+		const titleLabel = legendRoot.FindChild(
+			"OctarineTierLegendTitle"
+		) as Nullable<CLabel>
+		if (titleLabel?.BIsLoaded()) {
+			titleLabel.SetText(this.getTierLegendText("Tier legend"))
+		}
+		const tierKey = (
+			tier: string
+		): "Tier S" | "Tier A" | "Tier B" | "Tier C" | "Tier D" =>
+			`Tier ${tier}` as "Tier S" | "Tier A" | "Tier B" | "Tier C" | "Tier D"
+		for (const tier of TIER_ORDER) {
+			const descLabel = legendRoot.FindChildTraverse(
+				`OctarineTierLegendDesc_${tier}`
+			) as Nullable<CLabel>
+			if (descLabel?.BIsLoaded()) {
+				descLabel.SetText(this.getTierLegendText(tierKey(tier)))
+			}
+		}
+	}
+
+	private ensureTierLegendPanel(heroesPage: IUIPanel): void {
+		let legendRoot = heroesPage.FindChildTraverse(TIER_LEGEND_PANEL_ID)
+		if (legendRoot?.BIsLoaded()) {
+			this.updateTierLegendLabels(legendRoot)
+			legendRoot.SetVisible(this.menu.State.value)
+			return
+		}
+		legendRoot = Panorama.CreatePanel("Panel", TIER_LEGEND_PANEL_ID, heroesPage)
+		if (!legendRoot?.BIsLoaded()) {
+			return
+		}
+		this.setPanelStyle(legendRoot, [
+			`width: ${TIER_LEGEND_WIDTH}`,
+			"height: fit-children",
+			"flow-children: down",
+			"horizontal-align: left",
+			"vertical-align: center",
+			"margin-left: 24px",
+			"margin-top: 0",
+			`background-color: ${DEFAULT_PANEL_BG}`,
+			"border-radius: 6px",
+			"padding: 12px 14px",
+			"border: 1px solid rgba(255,255,255,0.08)",
+			"box-shadow: 0 2px 8px rgba(0,0,0,0.3)",
+			"z-index: 5"
+		])
+		const titleLabel = Panorama.CreatePanel(
+			"Label",
+			"OctarineTierLegendTitle",
+			legendRoot
+		) as Nullable<CLabel>
+		if (titleLabel?.BIsLoaded()) {
+			this.setPanelStyle(titleLabel, [
+				"width: 100%",
+				"height: 26px",
+				`font-size: ${TIER_LEGEND_TITLE_FONT_SIZE}`,
+				"font-weight: bold",
+				"color: #f1f5f9",
+				"text-align: left",
+				"vertical-align: center",
+				"text-overflow: shrink"
+			])
+		}
+		for (const tier of TIER_ORDER) {
+			const row = Panorama.CreatePanel(
+				"Panel",
+				`OctarineTierLegendRow_${tier}`,
+				legendRoot
+			)
+			if (!row?.BIsLoaded()) {
+				continue
+			}
+			this.setPanelStyle(row, [
+				"width: 100%",
+				`height: ${TIER_LEGEND_BADGE_SIZE}`,
+				"flow-children: right",
+				"vertical-align: center",
+				"margin-bottom: 6px"
+			])
+			const badge = Panorama.CreatePanel(
+				"Panel",
+				`OctarineTierLegendBadge_${tier}`,
+				row
+			)
+			if (badge?.BIsLoaded()) {
+				this.setPanelStyle(badge, [
+					`width: ${TIER_LEGEND_BADGE_SIZE}`,
+					`height: ${TIER_LEGEND_BADGE_SIZE}`,
+					`background-color: ${this.getTierBackgroundColor(tier)}`,
+					"border-radius: 3px",
+					"margin-right: 10px"
+				])
+				const badgeLabel = Panorama.CreatePanel(
+					"Label",
+					`OctarineTierLegendBadgeLabel_${tier}`,
+					badge
+				) as Nullable<CLabel>
+				if (badgeLabel?.BIsLoaded()) {
+					this.setTierLabelStyle(badgeLabel)
+					badgeLabel.SetText(tier)
+				}
+			}
+			const descLabel = Panorama.CreatePanel(
+				"Label",
+				`OctarineTierLegendDesc_${tier}`,
+				row
+			) as Nullable<CLabel>
+			if (descLabel?.BIsLoaded()) {
+				this.setPanelStyle(descLabel, [
+					"width: fill",
+					`height: ${TIER_LEGEND_BADGE_SIZE}`,
+					`line-height: ${TIER_LEGEND_BADGE_SIZE}`,
+					`font-size: ${TIER_LEGEND_DESC_FONT_SIZE}`,
+					"color: #cbd5e1",
+					"text-align: left",
+					"vertical-align: center",
+					"text-overflow: shrink"
+				])
+			}
+		}
+		this.updateTierLegendLabels(legendRoot)
+		legendRoot.SetVisible(this.menu.State.value)
+	}
+
+	private applyInformation(): void {
+		const root = Panorama.FindRootPanel("DotaDashboard")
+		if (!this.isValidPanel(root)) {
+			return
+		}
+		const heroesPage = root.FindChildTraverse("DOTAHeroesPage")
+		if (this.isValidPanel(heroesPage)) {
+			this.ensureTierLegendPanel(heroesPage)
 		}
 	}
 })()

@@ -34,12 +34,21 @@ export const TIER_LABEL_ID = "OctarineTierLabel"
 export const PICK_RATE_CONTAINER_ID = "OctarinePickRateOverlay"
 export const PICK_RATE_PANEL_ID = "OctarinePickRatePanel"
 export const PICK_RATE_LABEL_ID = "OctarinePickRateLabel"
+export const TIER_LEGEND_PANEL_ID = "OctarineTierLegendPanel"
 
 // Panel dimensions
 export const OVERLAY_PANEL_HEIGHT = "14px"
 export const WIN_RATE_PANEL_WIDTH = "28px"
 export const TIER_PANEL_WIDTH = "15px"
 export const PICK_RATE_PANEL_WIDTH = "32px"
+
+// Tier legend panel (left side of heroes page)
+export const TIER_LEGEND_WIDTH = "170px"
+export const TIER_LEGEND_ROW_HEIGHT = "28px"
+export const TIER_LEGEND_TITLE_FONT_SIZE = "18px"
+export const TIER_LEGEND_DESC_FONT_SIZE = "14px"
+export const TIER_LEGEND_BADGE_SIZE = "18px"
+export const TIER_ORDER: string[] = ["S", "A", "B", "C", "D"]
 
 // Win rates data
 // Directory with win-rates JSON files (day/week, by rank)
