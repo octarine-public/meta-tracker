@@ -1,4 +1,3 @@
-import type { HeroPosition, WinRateRank } from "./types"
 import {
 	matchCountsByRankAndPosition,
 	pickRatesByRank,
@@ -7,6 +6,7 @@ import {
 	winRatesByRankAndPosition
 } from "./loaders"
 import { getCurrentWinRatePeriod } from "./state"
+import { HeroPosition, WinRateRank } from "./types"
 
 export function getWinRatesByRank(rank: WinRateRank): Nullable<Map<number, number>> {
 	return winRatesByRank.get(getCurrentWinRatePeriod())?.get(rank)

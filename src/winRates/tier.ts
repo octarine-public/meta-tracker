@@ -1,6 +1,6 @@
 import { MIN_MATCHES_FOR_TIER } from "../constants"
-import type { HeroPosition, HeroTier, WinRateRank } from "./types"
 import { getMatchCountsByRankAndPosition, getWinRatesByRankAndPosition } from "./getters"
+import { HeroPosition, HeroTier, WinRateRank } from "./types"
 
 /** Quintile boundaries: top 20% = S, next 20% = A, 40–60% = B, 60–80% = C, bottom 20% = D */
 const TIER_BY_QUINTILE: HeroTier[] = ["S", "A", "B", "C", "D"]

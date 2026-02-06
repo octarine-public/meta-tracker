@@ -6,7 +6,7 @@ export interface HeroWeekData {
 	ban_percent: number
 }
 export interface HeroDataChunk {
-	// 0 = HERALD, 1 = GUARDIAN, 2 = CRUSADER, 3 = ARCHON, 4 = LEGEND, 5 = ANCIENT, 6 = DIVINE
+	// 0 = HERALD, 1 = GUARDIAN, 2 = CRUSADER, 3 = ARCHON, 4 = LEGEND, 5 = ANCIENT, 6 = DIVINE + IMMORTAL
 	rank_chunk: number
 	week_data: HeroWeekData[]
 }
@@ -411,12 +411,4 @@ export interface HeroDataChunk {
 export interface HeroDataResponse {
 	hero_id: number
 	hero_data_per_chunk: HeroDataChunk[]
-}
-
-/** Returns the latest week entry (smallest week number, e.g. week 1) from chunk.week_data */
-export function getLatestWeekData(chunk: HeroDataChunk): HeroWeekData | undefined {
-	if (!chunk.week_data?.length) {
-		return undefined
-	}
-	return chunk.week_data.reduce((a, b) => (a.week <= b.week ? a : b))
 }

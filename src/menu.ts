@@ -1,8 +1,8 @@
 import { Menu } from "github.com/octarine-public/wrapper/index"
 
 import { CHART_ICON } from "./constants"
-import { DotaPlusMenu } from "./menu/dotaPlus"
-import { StratzMenu } from "./menu/stratz"
+import { DotaPlusMenu } from "./dotaPlus/index"
+import { StratzMenu } from "./stratz/index"
 
 export class MenuManager {
 	public readonly State: Menu.Toggle
@@ -11,7 +11,6 @@ export class MenuManager {
 	public readonly dotaPlusMenu: DotaPlusMenu
 	private readonly statsType: Menu.Dropdown
 	private readonly tree = Menu.AddEntryDeep(["Visual", "Meta tracker"], [CHART_ICON])
-	private onDotaPlusRankChanged: (() => void) | undefined
 
 	constructor() {
 		this.State = this.tree.AddToggle("State", true)
@@ -19,14 +18,8 @@ export class MenuManager {
 		this.statsType = this.tree.AddDropdown("Stats type", ["Dota 2", "Stratz"])
 
 		this.stratzMenu = new StratzMenu(this.tree)
-		this.dotaPlusMenu = new DotaPlusMenu(this.tree, () =>
-			this.onDotaPlusRankChanged?.()
-		)
+		this.dotaPlusMenu = new DotaPlusMenu(this.tree)
 		this.statsType.OnValue(cb => this.statsTypeChanged(cb))
-	}
-
-	public setOnDotaPlusRankChanged(cb: () => void): void {
-		this.onDotaPlusRankChanged = cb
 	}
 
 	public isDota2Source(): boolean {

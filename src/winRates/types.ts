@@ -28,7 +28,7 @@ export const RANKS_DOTA_PLUS = [
 	"ARCHON",
 	"LEGEND",
 	"ANCIENT",
-	"DIVINE"
+	"DIVINE + IMMORTAL"
 ]
 
 export const HeroPositions = [1, 2, 3, 4, 5] as const

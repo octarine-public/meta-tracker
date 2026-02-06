@@ -1,8 +1,7 @@
 import { Utils } from "github.com/octarine-public/wrapper/index"
 
 import { WIN_RATES_DIR } from "../constants"
-import type { HeroPosition, WinRatePeriod } from "./types"
-import { HeroPositions, RANKS } from "./types"
+import { HeroPosition, HeroPositions, RANKS, WinRatePeriod } from "./types"
 
 export function winRatesPath(period: WinRatePeriod, rank: string): string {
 	return `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`

@@ -1,14 +1,12 @@
 import { Menu } from "github.com/octarine-public/wrapper/index"
 
-import { setCurrentDotaPlusRankChunk } from "../dotaPlusData"
 import { RANKS_DOTA_PLUS } from "../winRates/index"
+import { setCurrentDotaPlusRankChunk } from "./data"
 
 export class DotaPlusMenu {
 	private readonly winRateRankDropdown: Menu.Dropdown
 	private readonly rankName = "DotaPlusRank"
-	private readonly onRankChanged: () => void
-	constructor(node: Menu.Node, onRankChanged: () => void) {
-		this.onRankChanged = onRankChanged
+	constructor(node: Menu.Node) {
 		this.winRateRankDropdown = node.AddDropdown(this.rankName, RANKS_DOTA_PLUS, 1)
 		this.winRateRankDropdown.OnValue(() => this.syncRankChunk())
 		this.syncRankChunk()
@@ -21,6 +19,5 @@ export class DotaPlusMenu {
 			return
 		}
 		setCurrentDotaPlusRankChunk(this.winRateRankDropdown.SelectedID)
-		this.onRankChanged()
 	}
 }

@@ -28,7 +28,12 @@ import {
 	WIN_RATE_PANEL_ID,
 	WIN_RATE_PANEL_WIDTH
 } from "./constants"
-import { getPickRateForHero, getWinRateForHero, setDotaPlusData } from "./dotaPlusData"
+import {
+	getPickRateForHero,
+	getTierForHero as getDotaPlusTierForHero,
+	getWinRateForHero,
+	setDotaPlusData
+} from "./dotaPlus/index"
 import { MenuManager } from "./menu"
 import { HeroDataResponse } from "./models/heroDataTypes"
 import {
@@ -44,8 +49,6 @@ new (class CMetaTracker {
 	private isDestroyingHUD = false
 
 	constructor() {
-		this.menu.State.OnValue(() => this.applyWinRatesToHeroGrid())
-		this.menu.setOnDotaPlusRankChanged(() => this.applyWinRatesToHeroGrid())
 		EventsSDK.on("PostDataUpdate", this.OnPostDataUpdate.bind(this))
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
@@ -326,7 +329,7 @@ new (class CMetaTracker {
 			return undefined
 		}
 		if (this.menu.isDota2Source()) {
-			return undefined
+			return getDotaPlusTierForHero(heroID)
 		}
 		const rank = getCurrentWinRateRank()
 		const position = getCurrentHeroPosition()
@@ -360,6 +363,10 @@ new (class CMetaTracker {
 		}
 		const state = this.menu.State.value
 		container.SetVisible(state)
+		const bottomContainer = this.ensureBottomOverlayContainer(card)
+		if (bottomContainer?.BIsLoaded()) {
+			bottomContainer.SetVisible(state)
+		}
 		if (!state) {
 			return
 		}
@@ -369,9 +376,7 @@ new (class CMetaTracker {
 		}
 		winRateLabel.SetText(`${winRatePct.toFixed(0)}%`)
 		this.ensureTierPanel(container, tier)
-		const bottomContainer = this.ensureBottomOverlayContainer(card)
 		if (bottomContainer && bottomContainer.BIsLoaded()) {
-			bottomContainer.SetVisible(state)
 			if (pickRatePct > 0) {
 				const pickRateLabel = this.ensurePickRatePanel(bottomContainer)
 				if (pickRateLabel?.BIsLoaded()) {
