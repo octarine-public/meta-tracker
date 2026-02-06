@@ -1,4 +1,3 @@
-export type { HeroTier } from "./data"
 export {
 	getCurrentDotaPlusRankChunk,
 	getPickRateForHero,

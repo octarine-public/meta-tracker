@@ -7,9 +7,6 @@ import { StratzMenu } from "./stratz/index"
 export class MenuManager {
 	public readonly State: Menu.Toggle
 
-	/** Show/hide the tier legend (information) panel on the heroes page */
-	public readonly InformationPanel: Menu.Toggle
-
 	public readonly stratzMenu: StratzMenu
 	public readonly dotaPlusMenu: DotaPlusMenu
 	private readonly statsType: Menu.Dropdown
@@ -17,7 +14,6 @@ export class MenuManager {
 
 	constructor() {
 		this.State = this.tree.AddToggle("State", true)
-		this.InformationPanel = this.tree.AddToggle("Information panel", true)
 		this.tree.SortNodes = false
 		this.statsType = this.tree.AddDropdown("Stats type", ["Dota 2", "Stratz"])
 
