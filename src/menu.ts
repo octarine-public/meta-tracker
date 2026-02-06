@@ -10,8 +10,8 @@ export class MenuManager {
 	public readonly stratzMenu: StratzMenu
 	public readonly dotaPlusMenu: DotaPlusMenu
 	private readonly statsType: Menu.Dropdown
-
 	private readonly tree = Menu.AddEntryDeep(["Visual", "Meta tracker"], [CHART_ICON])
+	private onDotaPlusRankChanged: (() => void) | undefined
 
 	constructor() {
 		this.State = this.tree.AddToggle("State", true)
@@ -19,8 +19,18 @@ export class MenuManager {
 		this.statsType = this.tree.AddDropdown("Stats type", ["Dota 2", "Stratz"])
 
 		this.stratzMenu = new StratzMenu(this.tree)
-		this.dotaPlusMenu = new DotaPlusMenu(this.tree)
+		this.dotaPlusMenu = new DotaPlusMenu(this.tree, () =>
+			this.onDotaPlusRankChanged?.()
+		)
 		this.statsType.OnValue(cb => this.statsTypeChanged(cb))
+	}
+
+	public setOnDotaPlusRankChanged(cb: () => void): void {
+		this.onDotaPlusRankChanged = cb
+	}
+
+	public isDota2Source(): boolean {
+		return this.statsType.SelectedID === 0
 	}
 
 	private statsTypeChanged(call: Menu.Dropdown): void {

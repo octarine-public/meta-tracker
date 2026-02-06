@@ -28,6 +28,7 @@ import {
 	WIN_RATE_PANEL_ID,
 	WIN_RATE_PANEL_WIDTH
 } from "./constants"
+import { getPickRateForHero, getWinRateForHero, setDotaPlusData } from "./dotaPlusData"
 import { MenuManager } from "./menu"
 import { HeroDataResponse } from "./models/heroDataTypes"
 import {
@@ -36,7 +37,7 @@ import {
 	getHeroTier,
 	getPickRatesByRankAndPosition,
 	getWinRatesByRankAndPosition
-} from "./winRates"
+} from "./winRates/index"
 
 new (class CMetaTracker {
 	private readonly menu = new MenuManager()
@@ -44,6 +45,7 @@ new (class CMetaTracker {
 
 	constructor() {
 		this.menu.State.OnValue(() => this.applyWinRatesToHeroGrid())
+		this.menu.setOnDotaPlusRankChanged(() => this.applyWinRatesToHeroGrid())
 		EventsSDK.on("PostDataUpdate", this.OnPostDataUpdate.bind(this))
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
@@ -70,7 +72,8 @@ new (class CMetaTracker {
 		}
 	}
 	protected OnFullHeroGlobalDataUpdated(arr: HeroDataResponse[]): void {
-		console.log("OnFullHeroGlobalDataUpdated", arr)
+		setDotaPlusData(arr)
+		this.applyWinRatesToHeroGrid()
 	}
 	private isValidPanel(panel: Nullable<IUIPanel>): panel is IUIPanel {
 		return (
@@ -310,6 +313,9 @@ new (class CMetaTracker {
 		if (heroID === undefined) {
 			return DEFAULT_WIN_RATE
 		}
+		if (this.menu.isDota2Source()) {
+			return getWinRateForHero(heroID)
+		}
 		const rank = getCurrentWinRateRank()
 		const position = getCurrentHeroPosition()
 		const byHero = getWinRatesByRankAndPosition(rank, position)
@@ -319,6 +325,9 @@ new (class CMetaTracker {
 		if (heroID === undefined) {
 			return undefined
 		}
+		if (this.menu.isDota2Source()) {
+			return undefined
+		}
 		const rank = getCurrentWinRateRank()
 		const position = getCurrentHeroPosition()
 		return getHeroTier(heroID, rank, position)
@@ -326,6 +335,9 @@ new (class CMetaTracker {
 	private getPickRateByHeroId(heroID: Nullable<number>): number {
 		if (heroID === undefined) {
 			return 0
+		}
+		if (this.menu.isDota2Source()) {
+			return getPickRateForHero(heroID)
 		}
 		const rank = getCurrentWinRateRank()
 		const position = getCurrentHeroPosition()

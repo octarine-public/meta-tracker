@@ -9,7 +9,7 @@ import {
 	setCurrentHeroPosition,
 	setCurrentWinRatePeriod,
 	setCurrentWinRateRank
-} from "../winRates"
+} from "../winRates/index"
 
 export class StratzMenu {
 	private readonly winRatePeriodDropdown: Menu.Dropdown
@@ -21,12 +21,16 @@ export class StratzMenu {
 	private readonly positionName = "StratzPosition"
 
 	constructor(node: Menu.Node) {
-		this.winRatePeriodDropdown = node.AddDropdown(this.periodName, PeriodOptions, 1)
+		this.winRatePeriodDropdown = node.AddDropdown(
+			this.periodName,
+			[...PeriodOptions],
+			1
+		)
 		// 0 = ALL, 1 = HERALD, ... 8 = IMMORTAL; default ALL
-		this.winRateRankDropdown = node.AddDropdown(this.rankName, RankOptions, 1)
+		this.winRateRankDropdown = node.AddDropdown(this.rankName, [...RankOptions], 1)
 		this.winRatePositionDropdown = node.AddDropdown(
 			this.positionName,
-			PositionLabelList,
+			[...PositionLabelList],
 			1
 		)
 		this.winRatePeriodDropdown.OnValue(() => this.syncStateFromMenu())

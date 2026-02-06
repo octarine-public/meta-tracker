@@ -1,60 +1,12 @@
 import { Utils } from "github.com/octarine-public/wrapper/index"
 
-import { MIN_MATCHES_FOR_TIER, WIN_RATES_DIR } from "./constants"
+import { WIN_RATES_DIR } from "../constants"
+import type { HeroPosition, WinRatePeriod } from "./types"
+import { HeroPositions, RANKS } from "./types"
 
-function winRatesPath(period: WinRatePeriod, rank: string): string {
+export function winRatesPath(period: WinRatePeriod, rank: string): string {
 	return `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
 }
-
-/** Data period: day = 1 day, week = 7 days */
-export type WinRatePeriod = "day" | "week"
-
-/** Labels for period dropdown (same order as PeriodValues) */
-export const PeriodOptions = ["1 day", "Week"]
-export type WinRatePeriodOption = (typeof PeriodOptions)[number]
-
-/** Period values for loading data, index matches PeriodOptions */
-export const PeriodValues: WinRatePeriod[] = ["day", "week"]
-
-/** From lowest (Herald) to highest (Immortal) */
-export const RANKS = [
-	"HERALD",
-	"GUARDIAN",
-	"CRUSADER",
-	"ARCHON",
-	"LEGEND",
-	"ANCIENT",
-	"DIVINE",
-	"IMMORTAL"
-] as const
-
-// eslint-disable-next-line @typescript-eslint/naming-convention
-export const RANKS_DOTA_PLUS = [
-	"HERALD",
-	"GUARDIAN",
-	"CRUSADER",
-	"ARCHON",
-	"LEGEND",
-	"ANCIENT",
-	"DIVINE"
-]
-
-export type WinRateRank = (typeof RankOptions)[number]
-export type HeroPosition = (typeof HeroPositions)[number]
-export const HeroPositions = [1, 2, 3, 4, 5] as const
-export const RankOptions = ["ALL", ...RANKS]
-
-export const PositionLabelList = [
-	"Carry",
-	"Mid",
-	"Offlane",
-	"Soft support",
-	"Hard support"
-]
-
-export const HeroPositionLabels: Record<HeroPosition, string> = Object.fromEntries(
-	HeroPositions.map((pos, i) => [pos, PositionLabelList[i]])
-) as Record<HeroPosition, string>
 
 interface HeroWinEntry {
 	heroId: number
@@ -80,57 +32,28 @@ function getWinEntries(
 	return Array.isArray(arr) ? arr : null
 }
 
-/** winRates[period][rank][position] */
-const winRatesByRankAndPosition = new Map<
-	WinRatePeriod,
-	Map<string, Map<HeroPosition, Map<number, number>>>
->()
-const pickRatesByRankAndPosition = new Map<
-	WinRatePeriod,
-	Map<string, Map<HeroPosition, Map<number, number>>>
->()
-const matchCountsByRankAndPosition = new Map<
-	WinRatePeriod,
-	Map<string, Map<HeroPosition, Map<number, number>>>
->()
-
-const winRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
-const pickRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
-
-/** Current selection (used by menu + panorama) */
-let currentRank: WinRateRank = "ALL"
-let currentPosition: HeroPosition = 1
-let currentPeriod: WinRatePeriod = "day"
-
-export function getCurrentWinRateRank(): WinRateRank {
-	return currentRank
-}
-
-export function setCurrentWinRateRank(rank: WinRateRank): void {
-	currentRank = rank
-}
-
-export function getCurrentHeroPosition(): HeroPosition {
-	return currentPosition
-}
-
-export function setCurrentHeroPosition(position: HeroPosition): void {
-	currentPosition = position
-}
-
-export function getCurrentWinRatePeriod(): WinRatePeriod {
-	return currentPeriod
-}
-
-export function setCurrentWinRatePeriod(period: WinRatePeriod): void {
-	currentPeriod = period
-}
-
-interface RankStats {
+export interface RankStats {
 	winRates: Map<number, number>
 	pickRates: Map<number, number>
 	matchCounts: Map<number, number>
 }
+
+/** winRates[period][rank][position] */
+export const winRatesByRankAndPosition = new Map<
+	WinRatePeriod,
+	Map<string, Map<HeroPosition, Map<number, number>>>
+>()
+export const pickRatesByRankAndPosition = new Map<
+	WinRatePeriod,
+	Map<string, Map<HeroPosition, Map<number, number>>>
+>()
+export const matchCountsByRankAndPosition = new Map<
+	WinRatePeriod,
+	Map<string, Map<HeroPosition, Map<number, number>>>
+>()
+
+export const winRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
+export const pickRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
 
 function loadStatsForRank(period: WinRatePeriod, rank: string): RankStats {
 	const winRates = new Map<number, number>()
@@ -242,7 +165,7 @@ function loadStatsForAllRanksAndPosition(
 	return { winRates, pickRates, matchCounts }
 }
 
-function loadAllStatsByRank(): void {
+export function loadAllStatsByRank(): void {
 	const periods: WinRatePeriod[] = ["day", "week"]
 	for (const period of periods) {
 		const rankToWinRates = new Map<string, Map<number, number>>()
@@ -299,73 +222,3 @@ function loadAllStatsByRank(): void {
 		matchCountsByRankAndPosition.set(period, rankToMatchByPos)
 	}
 }
-
-export function getWinRatesByRank(rank: WinRateRank): Nullable<Map<number, number>> {
-	return winRatesByRank.get(currentPeriod)?.get(rank)
-}
-
-export function getPickRatesByRank(rank: WinRateRank): Nullable<Map<number, number>> {
-	return pickRatesByRank.get(currentPeriod)?.get(rank)
-}
-
-export function getWinRatesByRankAndPosition(
-	rank: WinRateRank,
-	position: HeroPosition
-): Nullable<Map<number, number>> {
-	return winRatesByRankAndPosition.get(currentPeriod)?.get(rank)?.get(position)
-}
-
-export function getPickRatesByRankAndPosition(
-	rank: WinRateRank,
-	position: HeroPosition
-): Nullable<Map<number, number>> {
-	return pickRatesByRankAndPosition.get(currentPeriod)?.get(rank)?.get(position)
-}
-
-/** Hero tier by percentile (quintiles) among heroes with enough games; no tier if sample too small */
-export type HeroTier = "S" | "A" | "B" | "C" | "D" | "?"
-
-/** Quintile boundaries: top 20% = S, next 20% = A, 40–60% = B, 60–80% = C, bottom 20% = D */
-const TIER_BY_QUINTILE: HeroTier[] = ["S", "A", "B", "C", "D"]
-
-export function getHeroTier(
-	heroId: number,
-	rank: WinRateRank,
-	position: HeroPosition
-): Nullable<HeroTier> {
-	const winRates = getWinRatesByRankAndPosition(rank, position)
-	const matchCounts = matchCountsByRankAndPosition
-		.get(currentPeriod)
-		?.get(rank)
-		?.get(position)
-	if (!winRates || !matchCounts) {
-		return "?"
-	}
-	const winRate = winRates.get(heroId)
-	const matches = matchCounts.get(heroId)
-	if (
-		winRate === undefined ||
-		matches === undefined ||
-		matches < MIN_MATCHES_FOR_TIER
-	) {
-		return "?"
-	}
-	// Build list of heroes with enough games, sorted by win rate descending
-	const eligible: { heroId: number; winRate: number }[] = []
-	for (const [id, wr] of winRates) {
-		const m = matchCounts.get(id)
-		if (m !== undefined && m >= MIN_MATCHES_FOR_TIER) {
-			eligible.push({ heroId: id, winRate: wr })
-		}
-	}
-	eligible.sort((a, b) => b.winRate - a.winRate)
-	const idx = eligible.findIndex(e => e.heroId === heroId)
-	if (idx < 0) {
-		return undefined
-	}
-	const n = eligible.length
-	const quintileIndex = n <= 1 ? 0 : Math.min(Math.floor((idx / n) * 5), 4)
-	return TIER_BY_QUINTILE[quintileIndex]
-}
-
-loadAllStatsByRank()
