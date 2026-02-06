@@ -1,5 +1,6 @@
 import { Menu } from "github.com/octarine-public/wrapper/index"
 
+import { CHART_ICON } from "./constants"
 import {
 	HeroPositions,
 	PeriodOptions,
@@ -17,9 +18,10 @@ export class MenuManager {
 	private readonly winRateRankDropdown: Menu.Dropdown
 	private readonly winRatePositionDropdown: Menu.Dropdown
 
-	private readonly path = "github.com/octarine-public/meta-tracker/"
-	private readonly icon = this.path + "scripts_files/chart.svg"
-	private readonly baseMenu = Menu.AddEntryDeep(["Visual", "Meta tracker"], [this.icon])
+	private readonly baseMenu = Menu.AddEntryDeep(
+		["Visual", "Meta tracker"],
+		[CHART_ICON]
+	)
 
 	constructor() {
 		this.State = this.baseMenu.AddToggle("State", true)
@@ -38,14 +40,14 @@ export class MenuManager {
 			"Sort by win rate position",
 			PositionLabelList
 		)
-		this.State.OnValue(() => this.refreshWinRateOverlay())
-		this.winRatePeriodDropdown.OnValue(() => this.refreshWinRateOverlay())
-		this.winRateRankDropdown.OnValue(() => this.refreshWinRateOverlay())
-		this.winRatePositionDropdown.OnValue(() => this.refreshWinRateOverlay())
-		this.refreshWinRateOverlay()
+		this.State.OnValue(() => this.syncStateFromMenu())
+		this.winRatePeriodDropdown.OnValue(() => this.syncStateFromMenu())
+		this.winRateRankDropdown.OnValue(() => this.syncStateFromMenu())
+		this.winRatePositionDropdown.OnValue(() => this.syncStateFromMenu())
+		this.syncStateFromMenu()
 	}
 
-	private refreshWinRateOverlay(): void {
+	private syncStateFromMenu(): void {
 		setCurrentWinRatePeriod(PeriodValues[this.winRatePeriodDropdown.SelectedID])
 		setCurrentWinRateRank(RankOptions[this.winRateRankDropdown.SelectedID])
 		setCurrentHeroPosition(HeroPositions[this.winRatePositionDropdown.SelectedID])

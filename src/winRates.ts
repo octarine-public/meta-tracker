@@ -1,6 +1,10 @@
 import { Utils } from "github.com/octarine-public/wrapper/index"
 
-const WIN_RATES_DIR = "win-rates"
+import { MIN_MATCHES_FOR_TIER, WIN_RATES_DIR } from "./constants"
+
+function winRatesPath(period: WinRatePeriod, rank: string): string {
+	return `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
+}
 
 /** Data period: day = 1 day, week = 7 days */
 export type WinRatePeriod = "day" | "week"
@@ -122,8 +126,7 @@ function loadStatsForRank(period: WinRatePeriod, rank: string): RankStats {
 	const pickRates = new Map<number, number>()
 	const matchCounts = new Map<number, number>()
 	try {
-		const path = `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
-		const data: WinRatesData = Utils.readJSON(path)
+		const data: WinRatesData = Utils.readJSON(winRatesPath(period, rank))
 		const aggregated = new Map<number, { wins: number; matches: number }>()
 		let totalMatches = 0
 		for (const key of Object.keys(data)) {
@@ -163,8 +166,7 @@ function loadStatsForRankAndPosition(
 	const pickRates = new Map<number, number>()
 	const matchCounts = new Map<number, number>()
 	try {
-		const path = `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
-		const data: WinRatesData = Utils.readJSON(path)
+		const data: WinRatesData = Utils.readJSON(winRatesPath(period, rank))
 		const key = `heroesPos${position}`
 		const entries = getWinEntries(data, key, period)
 		if (!entries) {
@@ -197,8 +199,7 @@ function loadStatsForAllRanksAndPosition(
 	let totalMatches = 0
 	for (const rank of RANKS) {
 		try {
-			const path = `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
-			const data: WinRatesData = Utils.readJSON(path)
+			const data: WinRatesData = Utils.readJSON(winRatesPath(period, rank))
 			const key = `heroesPos${position}`
 			const entries = getWinEntries(data, key, period)
 			if (!entries) {
@@ -309,9 +310,6 @@ export function getPickRatesByRankAndPosition(
 ): Nullable<Map<number, number>> {
 	return pickRatesByRankAndPosition.get(currentPeriod)?.get(rank)?.get(position)
 }
-
-/** Minimum matches required to show a tier (avoids noise from tiny samples) */
-const MIN_MATCHES_FOR_TIER = 100
 
 /** Hero tier by percentile (quintiles) among heroes with enough games; no tier if sample too small */
 export type HeroTier = "S" | "A" | "B" | "C" | "D" | "?"

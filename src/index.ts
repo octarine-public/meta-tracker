@@ -5,31 +5,38 @@ import {
 	EventsSDK,
 	GameRules,
 	GameState,
-	Sleeper,
 	UnitData
 } from "github.com/octarine-public/wrapper/index"
 
+import {
+	DEFAULT_PANEL_BG,
+	DEFAULT_WIN_RATE,
+	OVERLAY_CONTAINER_ID,
+	OVERLAY_PANEL_HEIGHT,
+	PICK_RATE_COLOR,
+	PICK_RATE_CONTAINER_ID,
+	PICK_RATE_LABEL_ID,
+	PICK_RATE_PANEL_ID,
+	PICK_RATE_PANEL_WIDTH,
+	TIER_BG_COLORS,
+	TIER_LABEL_ID,
+	TIER_PANEL_ID,
+	TIER_PANEL_WIDTH,
+	WIN_RATE_COLORS,
+	WIN_RATE_LABEL_ID,
+	WIN_RATE_PANEL_ID,
+	WIN_RATE_PANEL_WIDTH
+} from "./constants"
 import { MenuManager } from "./menu"
 import {
 	getCurrentHeroPosition,
 	getCurrentWinRateRank,
 	getHeroTier,
+	getPickRatesByRankAndPosition,
 	getWinRatesByRankAndPosition
 } from "./winRates"
 
 new (class CMetaTracker {
-	private readonly DEFAULT_WIN_RATE = 0
-	private readonly OVERLAY_CONTAINER_ID = "OctarineWinRateOverlay"
-	private readonly WIN_RATE_PANEL_ID = "OctarineWinRatePanel"
-	private readonly WIN_RATE_LABEL_ID = "OctarineWinRate"
-	private readonly TIER_PANEL_ID = "OctarineTierPanel"
-	private readonly TIER_LABEL_ID = "OctarineTierLabel"
-
-	private readonly OVERLAY_PANEL_HEIGHT = "14px"
-	private readonly WIN_RATE_PANEL_WIDTH = "28px"
-	private readonly TIER_PANEL_WIDTH = "15px"
-
-	private readonly sleeper = new Sleeper()
 	private readonly menu = new MenuManager()
 	private isDestroyingHUD = false
 
@@ -61,7 +68,7 @@ new (class CMetaTracker {
 			"width: 100%",
 			"height: 100%",
 			"font-size: 12px",
-			"color: " + color,
+			`color: ${color}`,
 			"text-align: center",
 			"vertical-align: center",
 			"text-shadow: 0 1px 2px rgba(0,0,0,0.8)"
@@ -107,18 +114,18 @@ new (class CMetaTracker {
 	}
 	private getWinRateTextColor(pct: number): string {
 		if (pct < 50) {
-			return "#f87171"
+			return WIN_RATE_COLORS.low
 		}
 		if (pct === 50) {
-			return "#fb923c"
+			return WIN_RATE_COLORS.mid
 		}
-		return "#4ade80"
+		return WIN_RATE_COLORS.high
 	}
-	private setWinRatePanelStyle(panel: IUIPanel, _winRatePct: number): void {
+	private setWinRatePanelStyle(panel: IUIPanel): void {
 		this.setPanelStyle(panel, [
-			"width: " + this.WIN_RATE_PANEL_WIDTH,
-			"height: " + this.OVERLAY_PANEL_HEIGHT,
-			"background-color: rgba(0,0,0,0.85)",
+			`width: ${WIN_RATE_PANEL_WIDTH}`,
+			`height: ${OVERLAY_PANEL_HEIGHT}`,
+			`background-color: ${DEFAULT_PANEL_BG}`,
 			"border-radius: 1px",
 			"z-index: 10"
 		])
@@ -127,34 +134,35 @@ new (class CMetaTracker {
 		this.setLabelStyle(label, this.getWinRateTextColor(winRatePct))
 	}
 	private getTierBackgroundColor(tier: string): string {
-		switch (tier) {
-			case "S":
-				return "rgba(124,58,237,0.9)"
-			case "A":
-				return "rgba(59,130,246,0.9)"
-			case "B":
-				return "rgba(20,184,166,0.9)"
-			case "C":
-				return "rgba(249,115,22,0.9)"
-			case "D":
-				return "rgba(239,68,68,0.9)"
-			default:
-				return "rgba(0,0,0,0.85)"
-		}
+		return TIER_BG_COLORS[tier] ?? DEFAULT_PANEL_BG
 	}
 	private setTierPanelStyle(panel: IUIPanel, tier: string): void {
 		this.setPanelStyle(panel, [
-			"width: " + this.TIER_PANEL_WIDTH,
-			"height: " + this.OVERLAY_PANEL_HEIGHT,
-			"background-color: " + this.getTierBackgroundColor(tier),
+			`width: ${TIER_PANEL_WIDTH}`,
+			`height: ${OVERLAY_PANEL_HEIGHT}`,
+			`background-color: ${this.getTierBackgroundColor(tier)}`,
 			"border-radius: 1px",
 			"text-align: center",
 			"vertical-align: center",
 			"z-index: 10"
 		])
 	}
-	private setTierLabelStyle(label: IUIPanel, _tier: string): void {
+	private setTierLabelStyle(label: IUIPanel): void {
 		this.setLabelStyle(label, "#ffffff")
+	}
+	private setPickRatePanelStyle(panel: IUIPanel): void {
+		this.setPanelStyle(panel, [
+			`width: ${PICK_RATE_PANEL_WIDTH}`,
+			`height: ${OVERLAY_PANEL_HEIGHT}`,
+			`background-color: ${DEFAULT_PANEL_BG}`,
+			"border-radius: 1px",
+			"text-align: center",
+			"vertical-align: center",
+			"z-index: 10"
+		])
+	}
+	private setPickRateLabelStyle(label: IUIPanel): void {
+		this.setLabelStyle(label, PICK_RATE_COLOR)
 	}
 	private getHeroIDFromCard(card: IUIPanel): Nullable<number> {
 		const contents = card.FindChild("HeroCardContents")
@@ -170,15 +178,20 @@ new (class CMetaTracker {
 		}
 		return UnitData.GetHeroID(heroName)
 	}
+	private getOverlayParent(card: IUIPanel): IUIPanel {
+		return (
+			card.FindChild("HeroCardOverlays") ??
+			card.FindChild("HeroCardContents") ??
+			card
+		)
+	}
 	private ensureOverlayContainer(card: IUIPanel): Nullable<IUIPanel> {
-		const overlays = card.FindChild("HeroCardOverlays")
-		const contents = card.FindChild("HeroCardContents")
-		const parent = overlays ?? contents ?? card
-		let container = parent.FindChildTraverse(this.OVERLAY_CONTAINER_ID)
+		const parent = this.getOverlayParent(card)
+		let container = parent.FindChildTraverse(OVERLAY_CONTAINER_ID)
 		if (container && container.BIsLoaded()) {
 			return container
 		}
-		container = Panorama.CreatePanel("Panel", this.OVERLAY_CONTAINER_ID, parent)
+		container = Panorama.CreatePanel("Panel", OVERLAY_CONTAINER_ID, parent)
 		container?.AddClass(Panorama.MakeSymbol("HeroCardOverlays"))
 		if (!container || !container.BIsLoaded()) {
 			return undefined
@@ -188,7 +201,28 @@ new (class CMetaTracker {
 			"y: 4px",
 			"flow-children: right",
 			"width: fit-children",
-			"height: " + this.OVERLAY_PANEL_HEIGHT
+			`height: ${OVERLAY_PANEL_HEIGHT}`
+		])
+		return container
+	}
+	private ensureBottomOverlayContainer(card: IUIPanel): Nullable<IUIPanel> {
+		const parent = this.getOverlayParent(card)
+		let container = parent.FindChildTraverse(PICK_RATE_CONTAINER_ID)
+		if (container && container.BIsLoaded()) {
+			return container
+		}
+		container = Panorama.CreatePanel("Panel", PICK_RATE_CONTAINER_ID, parent)
+		if (!container || !container.BIsLoaded()) {
+			return undefined
+		}
+		this.setPanelStyle(container, [
+			"width: fit-children",
+			`height: ${OVERLAY_PANEL_HEIGHT}`,
+			"horizontal-align: right",
+			"vertical-align: bottom",
+			"margin-right: 4px",
+			"margin-bottom: 4px",
+			"flow-children: right"
 		])
 		return container
 	}
@@ -196,69 +230,65 @@ new (class CMetaTracker {
 		container: IUIPanel,
 		winRatePct: number
 	): Nullable<CLabel> {
-		let panel = container.FindChild(this.WIN_RATE_PANEL_ID)
+		let panel = container.FindChild(WIN_RATE_PANEL_ID)
 		if (!panel || !panel.BIsLoaded()) {
-			panel = Panorama.CreatePanel("Panel", this.WIN_RATE_PANEL_ID, container)
+			panel = Panorama.CreatePanel("Panel", WIN_RATE_PANEL_ID, container)
 			if (!panel || !panel.BIsLoaded()) {
 				return undefined
 			}
-			const labelPanel = Panorama.CreatePanel(
-				"Label",
-				this.WIN_RATE_LABEL_ID,
-				panel
-			)
-			if (!labelPanel || !labelPanel.BIsLoaded()) {
-				return undefined
-			}
+			Panorama.CreatePanel("Label", WIN_RATE_LABEL_ID, panel)
 		}
-		this.setWinRatePanelStyle(panel, winRatePct)
-		const label = panel.FindChild(this.WIN_RATE_LABEL_ID) as Nullable<CLabel>
-		if (!label) {
-			return undefined
-		}
-		if (label.BIsLoaded()) {
+		this.setWinRatePanelStyle(panel)
+		const label = panel.FindChild(WIN_RATE_LABEL_ID) as Nullable<CLabel>
+		if (label?.BIsLoaded()) {
 			this.setWinRateLabelStyle(label, winRatePct)
 		}
-		return label
+		return label ?? undefined
 	}
 	private ensureTierPanel(
 		container: IUIPanel,
 		tier: string | undefined
 	): Nullable<CLabel> {
-		let panel = container.FindChild(this.TIER_PANEL_ID)
+		let panel = container.FindChild(TIER_PANEL_ID)
 		if (!panel || !panel.BIsLoaded()) {
-			panel = Panorama.CreatePanel("Panel", this.TIER_PANEL_ID, container)
+			panel = Panorama.CreatePanel("Panel", TIER_PANEL_ID, container)
 			if (!panel || !panel.BIsLoaded()) {
 				return undefined
 			}
-			const labelPanel = Panorama.CreatePanel("Label", this.TIER_LABEL_ID, panel)
-			if (!labelPanel || !labelPanel.BIsLoaded()) {
-				return undefined
-			}
+			Panorama.CreatePanel("Label", TIER_LABEL_ID, panel)
 		}
 		this.setTierPanelStyle(panel, tier ?? "?")
-		const label = panel.FindChild(this.TIER_LABEL_ID) as Nullable<CLabel>
-		if (!label) {
-			return undefined
+		const label = panel.FindChild(TIER_LABEL_ID) as Nullable<CLabel>
+		if (label?.BIsLoaded()) {
+			this.setTierLabelStyle(label)
+			label.SetText(tier ?? "")
 		}
-		if (label.BIsLoaded()) {
-			if (tier !== undefined) {
-				this.setTierLabelStyle(label, tier)
-				label.SetText(tier)
-			} else {
-				label.SetText("")
+		return label ?? undefined
+	}
+	private ensurePickRatePanel(container: IUIPanel): Nullable<CLabel> {
+		let panel = container.FindChild(PICK_RATE_PANEL_ID)
+		if (!panel || !panel.BIsLoaded()) {
+			panel = Panorama.CreatePanel("Panel", PICK_RATE_PANEL_ID, container)
+			if (!panel || !panel.BIsLoaded()) {
+				return undefined
 			}
+			Panorama.CreatePanel("Label", PICK_RATE_LABEL_ID, panel)
 		}
-		return label
+		this.setPickRatePanelStyle(panel)
+		const label = panel.FindChild(PICK_RATE_LABEL_ID) as Nullable<CLabel>
+		if (label?.BIsLoaded()) {
+			this.setPickRateLabelStyle(label)
+		}
+		return label ?? undefined
 	}
 	private getWinRateByHeroId(heroID: Nullable<number>): number {
 		if (heroID === undefined) {
-			return this.DEFAULT_WIN_RATE
+			return DEFAULT_WIN_RATE
 		}
 		const rank = getCurrentWinRateRank()
 		const position = getCurrentHeroPosition()
 		const byHero = getWinRatesByRankAndPosition(rank, position)
-		return byHero?.get(heroID) ?? this.DEFAULT_WIN_RATE
+		return byHero?.get(heroID) ?? DEFAULT_WIN_RATE
 	}
 	private getTierForHero(heroID: Nullable<number>): Nullable<string> {
 		if (heroID === undefined) {
@@ -268,13 +298,23 @@ new (class CMetaTracker {
 		const position = getCurrentHeroPosition()
 		return getHeroTier(heroID, rank, position)
 	}
+	private getPickRateByHeroId(heroID: Nullable<number>): number {
+		if (heroID === undefined) {
+			return 0
+		}
+		const rank = getCurrentWinRateRank()
+		const position = getCurrentHeroPosition()
+		const byHero = getPickRatesByRankAndPosition(rank, position)
+		return byHero?.get(heroID) ?? 0
+	}
 	private applyWinRateToCard(
 		card: IUIPanel,
 		winRatePct: number,
 		heroID: Nullable<number>
 	): void {
 		const tier = this.getTierForHero(heroID)
-		if (winRatePct === 0 && tier === undefined) {
+		const pickRatePct = this.getPickRateByHeroId(heroID)
+		if (winRatePct === 0 && tier === undefined && pickRatePct <= 0) {
 			return
 		}
 		const container = this.ensureOverlayContainer(card)
@@ -290,8 +330,18 @@ new (class CMetaTracker {
 		if (!winRateLabel || !winRateLabel.BIsLoaded()) {
 			return
 		}
-		winRateLabel.SetText(winRatePct.toFixed(0) + "%")
+		winRateLabel.SetText(`${winRatePct.toFixed(0)}%`)
 		this.ensureTierPanel(container, tier)
+		const bottomContainer = this.ensureBottomOverlayContainer(card)
+		if (bottomContainer && bottomContainer.BIsLoaded()) {
+			bottomContainer.SetVisible(state)
+			if (pickRatePct > 0) {
+				const pickRateLabel = this.ensurePickRatePanel(bottomContainer)
+				if (pickRateLabel?.BIsLoaded()) {
+					pickRateLabel.SetText(`${pickRatePct.toFixed(2)}%`)
+				}
+			}
+		}
 	}
 	private applyWinRatesToHeroGrid(uiState: DOTAGameUIState = GameState.UIState): void {
 		const isDashboard = uiState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
@@ -316,26 +366,20 @@ new (class CMetaTracker {
 		}
 	}
 	private OnPostDataUpdate(): void {
-		if (this.sleeper.Sleeping("applyWinRatesToHeroGrid")) {
-			return
-		}
 		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
 		if (GameRules && !isDashboard && GameRules.IsInGame) {
 			return
 		}
 		this.applyWinRatesToHeroGrid()
-		this.sleeper.Sleep(300, "applyWinRatesToHeroGrid")
 	}
 	private OnWindowDestroy(name: string): void {
 		if (name === "DotaHud") {
 			this.isDestroyingHUD = true
-			this.sleeper.FullReset()
 		}
 	}
 	private OnWindowCreate(name: string): void {
 		if (name === "DotaHud") {
 			this.isDestroyingHUD = false
-			this.sleeper.FullReset()
 		}
 	}
 })()
