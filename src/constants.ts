@@ -45,6 +45,10 @@ export const PICK_RATE_PANEL_WIDTH = "32px"
 // Tier legend panel (left side of heroes page)
 export const TIER_LEGEND_WIDTH = "170px"
 export const TIER_LEGEND_ROW_HEIGHT = "28px"
+export const TIER_LEGEND_CLOSE_BUTTON_ID = "OctarineTierLegendClose"
+/** Margin from top to align with first row of heroes */
+export const TIER_LEGEND_MARGIN_TOP = "56px"
+export const TIER_LEGEND_MARGIN_LEFT = "8px"
 export const TIER_LEGEND_TITLE_FONT_SIZE = "18px"
 export const TIER_LEGEND_DESC_FONT_SIZE = "14px"
 export const TIER_LEGEND_BADGE_SIZE = "18px"

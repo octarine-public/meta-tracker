@@ -23,7 +23,10 @@ import {
 	TIER_BG_COLORS,
 	TIER_LABEL_ID,
 	TIER_LEGEND_BADGE_SIZE,
+	TIER_LEGEND_CLOSE_BUTTON_ID,
 	TIER_LEGEND_DESC_FONT_SIZE,
+	TIER_LEGEND_MARGIN_LEFT,
+	TIER_LEGEND_MARGIN_TOP,
 	TIER_LEGEND_PANEL_ID,
 	TIER_LEGEND_TITLE_FONT_SIZE,
 	TIER_LEGEND_WIDTH,
@@ -429,7 +432,7 @@ new (class CMetaTracker {
 	}
 
 	private updateTierLegendLabels(legendRoot: IUIPanel): void {
-		const titleLabel = legendRoot.FindChild(
+		const titleLabel = legendRoot.FindChildTraverse(
 			"OctarineTierLegendTitle"
 		) as Nullable<CLabel>
 		if (titleLabel?.BIsLoaded()) {
@@ -449,48 +452,94 @@ new (class CMetaTracker {
 		}
 	}
 
-	private ensureTierLegendPanel(heroesPage: IUIPanel): void {
-		let legendRoot = heroesPage.FindChildTraverse(TIER_LEGEND_PANEL_ID)
+	private onTierLegendCloseActivate(_panel: IUIPanel): void {
+		this.hideTierLegendPanel()
+	}
+
+	private hideTierLegendPanel(): void {
+		this.menu.InformationPanel.value = false
+		const root = Panorama.FindRootPanel("DotaDashboard")
+		if (!this.isValidPanel(root)) {
+			return
+		}
+		const heroesPage = root.FindChildTraverse("DOTAHeroesPage")
+		const legendRoot =
+			heroesPage?.BIsLoaded() === true
+				? heroesPage.FindChildTraverse(TIER_LEGEND_PANEL_ID)
+				: undefined
 		if (legendRoot?.BIsLoaded()) {
-			this.updateTierLegendLabels(legendRoot)
-			legendRoot.SetVisible(this.menu.State.value)
-			return
+			legendRoot.SetVisible(false)
+			legendRoot.RemoveAndDeleteChildren()
 		}
-		legendRoot = Panorama.CreatePanel("Panel", TIER_LEGEND_PANEL_ID, heroesPage)
-		if (!legendRoot?.BIsLoaded()) {
-			return
-		}
-		this.setPanelStyle(legendRoot, [
-			`width: ${TIER_LEGEND_WIDTH}`,
-			"height: fit-children",
-			"flow-children: down",
-			"horizontal-align: left",
-			"vertical-align: center",
-			"margin-left: 24px",
-			"margin-top: 0",
-			`background-color: ${DEFAULT_PANEL_BG}`,
-			"border-radius: 6px",
-			"padding: 12px 14px",
-			"border: 1px solid rgba(255,255,255,0.08)",
-			"box-shadow: 0 2px 8px rgba(0,0,0,0.3)",
-			"z-index: 5"
-		])
-		const titleLabel = Panorama.CreatePanel(
-			"Label",
-			"OctarineTierLegendTitle",
+	}
+
+	private fillTierLegendPanel(legendRoot: IUIPanel): void {
+		const headerRow = Panorama.CreatePanel(
+			"Panel",
+			"OctarineTierLegendHeader",
 			legendRoot
-		) as Nullable<CLabel>
-		if (titleLabel?.BIsLoaded()) {
-			this.setPanelStyle(titleLabel, [
+		)
+		if (headerRow?.BIsLoaded()) {
+			this.setPanelStyle(headerRow, [
 				"width: 100%",
 				"height: 26px",
-				`font-size: ${TIER_LEGEND_TITLE_FONT_SIZE}`,
-				"font-weight: bold",
-				"color: #f1f5f9",
-				"text-align: left",
-				"vertical-align: center",
-				"text-overflow: shrink"
+				"flow-children: right",
+				"vertical-align: center"
 			])
+			const titleLabel = Panorama.CreatePanel(
+				"Label",
+				"OctarineTierLegendTitle",
+				headerRow
+			) as Nullable<CLabel>
+			if (titleLabel?.BIsLoaded()) {
+				this.setPanelStyle(titleLabel, [
+					"width: fill",
+					"height: 26px",
+					`font-size: ${TIER_LEGEND_TITLE_FONT_SIZE}`,
+					"font-weight: bold",
+					"color: #f1f5f9",
+					"text-align: left",
+					"vertical-align: center",
+					"text-overflow: shrink"
+				])
+			}
+			const closeBtn = Panorama.CreatePanel(
+				"Button",
+				TIER_LEGEND_CLOSE_BUTTON_ID,
+				headerRow
+			)
+			if (closeBtn?.BIsLoaded()) {
+				this.setPanelStyle(closeBtn, [
+					"width: 22px",
+					"height: 22px",
+					"margin-left: 4px",
+					"background-color: rgba(255,255,255,0.12)",
+					"border-radius: 4px",
+					"border: 1px solid rgba(255,255,255,0.2)"
+				])
+				const closeLabel = Panorama.CreatePanel(
+					"Label",
+					"OctarineTierLegendCloseLabel",
+					closeBtn
+				) as Nullable<CLabel>
+				if (closeLabel?.BIsLoaded()) {
+					closeLabel.SetText("×")
+					this.setPanelStyle(closeLabel, [
+						"width: 100%",
+						"height: 100%",
+						"font-size: 16px",
+						"font-weight: bold",
+						"color: #f1f5f9",
+						"text-align: center",
+						"vertical-align: center"
+					])
+				}
+				Panorama.RegisterEventHandler(
+					"Activate",
+					closeBtn,
+					this.onTierLegendCloseActivate.bind(this)
+				)
+			}
 		}
 		for (const tier of TIER_ORDER) {
 			const row = Panorama.CreatePanel(
@@ -549,8 +598,41 @@ new (class CMetaTracker {
 				])
 			}
 		}
+	}
+
+	private ensureTierLegendPanel(heroesPage: IUIPanel): void {
+		const state = this.menu.State.value && this.menu.InformationPanel.value
+		let legendRoot = heroesPage.FindChildTraverse(TIER_LEGEND_PANEL_ID)
+		if (legendRoot?.BIsLoaded()) {
+			if (legendRoot.GetFirstChild() === null) {
+				this.fillTierLegendPanel(legendRoot)
+			}
+			this.updateTierLegendLabels(legendRoot)
+			legendRoot.SetVisible(state)
+			return
+		}
+		legendRoot = Panorama.CreatePanel("Panel", TIER_LEGEND_PANEL_ID, heroesPage)
+		if (!legendRoot?.BIsLoaded()) {
+			return
+		}
+		this.setPanelStyle(legendRoot, [
+			`width: ${TIER_LEGEND_WIDTH}`,
+			"height: fit-children",
+			"flow-children: down",
+			"horizontal-align: left",
+			"vertical-align: top",
+			`margin-left: ${TIER_LEGEND_MARGIN_LEFT}`,
+			`margin-top: ${TIER_LEGEND_MARGIN_TOP}`,
+			//`background-color: ${DEFAULT_PANEL_BG}`,
+			"border-radius: 6px",
+			"padding: 12px 14px",
+			//"border: 1px solid rgba(255,255,255,0.08)",
+			//"box-shadow: 0 2px 8px rgba(0,0,0,0.3)",
+			"z-index: 5"
+		])
+		this.fillTierLegendPanel(legendRoot)
 		this.updateTierLegendLabels(legendRoot)
-		legendRoot.SetVisible(this.menu.State.value)
+		legendRoot.SetVisible(state)
 	}
 
 	private applyInformation(): void {
