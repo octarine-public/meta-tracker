@@ -2,15 +2,26 @@ import { Utils } from "github.com/octarine-public/wrapper/index"
 
 const WIN_RATES_DIR = "win-rates"
 
+/** Data period: day = 1 day, week = 7 days */
+export type WinRatePeriod = "day" | "week"
+
+/** Labels for period dropdown (same order as PeriodValues) */
+export const PeriodOptions = ["1 day", "Week"]
+export type WinRatePeriodOption = (typeof PeriodOptions)[number]
+
+/** Period values for loading data, index matches PeriodOptions */
+export const PeriodValues: WinRatePeriod[] = ["day", "week"]
+
+/** From lowest (Herald) to highest (Immortal) */
 export const RANKS = [
-	"ANCIENT",
-	"ARCHON",
-	"CRUSADER",
-	"DIVINE",
-	"GUARDIAN",
 	"HERALD",
-	"IMMORTAL",
-	"LEGEND"
+	"GUARDIAN",
+	"CRUSADER",
+	"ARCHON",
+	"LEGEND",
+	"ANCIENT",
+	"DIVINE",
+	"IMMORTAL"
 ] as const
 
 export type WinRateRank = (typeof RankOptions)[number]
@@ -30,30 +41,47 @@ export const HeroPositionLabels: Record<HeroPosition, string> = Object.fromEntri
 	HeroPositions.map((pos, i) => [pos, PositionLabelList[i]])
 ) as Record<HeroPosition, string>
 
-interface HeroWinDayEntry {
+interface HeroWinEntry {
 	heroId: number
 	matchCount: number
 	winCount: number
 }
 
-type WinRatesData = Record<string, { winDay: HeroWinDayEntry[] }>
-
-const winRatesByRank = new Map<string, Map<number, number>>()
-const pickRatesByRank = new Map<string, Map<number, number>>()
-
-/** winRates[rank][position] */
-const winRatesByRankAndPosition = new Map<
+type WinRatesData = Record<
 	string,
-	Map<HeroPosition, Map<number, number>>
+	{ winDay: HeroWinEntry[] | null; winWeek?: HeroWinEntry[] | null }
+>
+
+function getWinEntries(
+	data: WinRatesData,
+	key: string,
+	period: WinRatePeriod
+): HeroWinEntry[] | null {
+	const block = data[key]
+	if (!block) {
+		return null
+	}
+	const arr = period === "week" ? (block.winWeek ?? block.winDay) : block.winDay
+	return Array.isArray(arr) ? arr : null
+}
+
+/** winRates[period][rank][position] */
+const winRatesByRankAndPosition = new Map<
+	WinRatePeriod,
+	Map<string, Map<HeroPosition, Map<number, number>>>
 >()
 const pickRatesByRankAndPosition = new Map<
-	string,
-	Map<HeroPosition, Map<number, number>>
+	WinRatePeriod,
+	Map<string, Map<HeroPosition, Map<number, number>>>
 >()
+
+const winRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
+const pickRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
 
 /** Current selection (used by menu + panorama) */
 let currentRank: WinRateRank = "ALL"
 let currentPosition: HeroPosition = 1
+let currentPeriod: WinRatePeriod = "day"
 
 export function getCurrentWinRateRank(): WinRateRank {
 	return currentRank
@@ -71,22 +99,33 @@ export function setCurrentHeroPosition(position: HeroPosition): void {
 	currentPosition = position
 }
 
+export function getCurrentWinRatePeriod(): WinRatePeriod {
+	return currentPeriod
+}
+
+export function setCurrentWinRatePeriod(period: WinRatePeriod): void {
+	currentPeriod = period
+}
+
 interface RankStats {
 	winRates: Map<number, number>
 	pickRates: Map<number, number>
 }
 
-function loadStatsForRank(rank: string): RankStats {
+function loadStatsForRank(period: WinRatePeriod, rank: string): RankStats {
 	const winRates = new Map<number, number>()
 	const pickRates = new Map<number, number>()
 	try {
-		const path = `${WIN_RATES_DIR}/heroes_meta_positions_${rank}.json`
+		const path = `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
 		const data: WinRatesData = Utils.readJSON(path)
 		const aggregated = new Map<number, { wins: number; matches: number }>()
 		let totalMatches = 0
 		for (const key of Object.keys(data)) {
-			const winDay = data[key]?.winDay
-			for (const entry of winDay) {
+			const entries = getWinEntries(data, key, period)
+			if (!entries) {
+				continue
+			}
+			for (const entry of entries) {
 				totalMatches += entry.matchCount
 				const cur = aggregated.get(entry.heroId) ?? { wins: 0, matches: 0 }
 				cur.wins += entry.winCount
@@ -108,22 +147,26 @@ function loadStatsForRank(rank: string): RankStats {
 	return { winRates, pickRates }
 }
 
-function loadStatsForRankAndPosition(rank: string, position: HeroPosition): RankStats {
+function loadStatsForRankAndPosition(
+	period: WinRatePeriod,
+	rank: string,
+	position: HeroPosition
+): RankStats {
 	const winRates = new Map<number, number>()
 	const pickRates = new Map<number, number>()
 	try {
-		const path = `${WIN_RATES_DIR}/heroes_meta_positions_${rank}.json`
+		const path = `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
 		const data: WinRatesData = Utils.readJSON(path)
 		const key = `heroesPos${position}`
-		const winDay = data[key]?.winDay
-		if (!Array.isArray(winDay)) {
+		const entries = getWinEntries(data, key, period)
+		if (!entries) {
 			return { winRates, pickRates }
 		}
 		let totalMatches = 0
-		for (const entry of winDay) {
+		for (const entry of entries) {
 			totalMatches += entry.matchCount
 		}
-		for (const entry of winDay) {
+		for (const entry of entries) {
 			if (entry.matchCount > 0) {
 				winRates.set(entry.heroId, (100 * entry.winCount) / entry.matchCount)
 				if (totalMatches > 0) {
@@ -137,20 +180,22 @@ function loadStatsForRankAndPosition(rank: string, position: HeroPosition): Rank
 	return { winRates, pickRates }
 }
 
-/** Aggregate wins/matches across all ranks for one position, then compute win/pick rates */
-function loadStatsForAllRanksAndPosition(position: HeroPosition): RankStats {
+function loadStatsForAllRanksAndPosition(
+	period: WinRatePeriod,
+	position: HeroPosition
+): RankStats {
 	const aggregated = new Map<number, { wins: number; matches: number }>()
 	let totalMatches = 0
 	for (const rank of RANKS) {
 		try {
-			const path = `${WIN_RATES_DIR}/heroes_meta_positions_${rank}.json`
+			const path = `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
 			const data: WinRatesData = Utils.readJSON(path)
 			const key = `heroesPos${position}`
-			const winDay = data[key]?.winDay
-			if (!Array.isArray(winDay)) {
+			const entries = getWinEntries(data, key, period)
+			if (!entries) {
 				continue
 			}
-			for (const entry of winDay) {
+			for (const entry of entries) {
 				totalMatches += entry.matchCount
 				const cur = aggregated.get(entry.heroId) ?? { wins: 0, matches: 0 }
 				cur.wins += entry.winCount
@@ -175,53 +220,74 @@ function loadStatsForAllRanksAndPosition(position: HeroPosition): RankStats {
 }
 
 function loadAllStatsByRank(): void {
-	for (const rank of RANKS) {
-		const { winRates, pickRates } = loadStatsForRank(rank)
-		winRatesByRank.set(rank, winRates)
-		pickRatesByRank.set(rank, pickRates)
+	const periods: WinRatePeriod[] = ["day", "week"]
+	for (const period of periods) {
+		const rankToWinRates = new Map<string, Map<number, number>>()
+		const rankToPickRates = new Map<string, Map<number, number>>()
+		const rankToWinByPos = new Map<string, Map<HeroPosition, Map<number, number>>>()
+		const rankToPickByPos = new Map<string, Map<HeroPosition, Map<number, number>>>()
 
-		const winByPos = new Map<HeroPosition, Map<number, number>>()
-		const pickByPos = new Map<HeroPosition, Map<number, number>>()
-		for (const pos of HeroPositions) {
-			const { winRates: wr, pickRates: pr } = loadStatsForRankAndPosition(rank, pos)
-			winByPos.set(pos, wr)
-			pickByPos.set(pos, pr)
+		for (const rank of RANKS) {
+			const { winRates, pickRates } = loadStatsForRank(period, rank)
+			rankToWinRates.set(rank, winRates)
+			rankToPickRates.set(rank, pickRates)
+
+			const winByPos = new Map<HeroPosition, Map<number, number>>()
+			const pickByPos = new Map<HeroPosition, Map<number, number>>()
+			for (const pos of HeroPositions) {
+				const { winRates: wr, pickRates: pr } = loadStatsForRankAndPosition(
+					period,
+					rank,
+					pos
+				)
+				winByPos.set(pos, wr)
+				pickByPos.set(pos, pr)
+			}
+			rankToWinByPos.set(rank, winByPos)
+			rankToPickByPos.set(rank, pickByPos)
 		}
-		winRatesByRankAndPosition.set(rank, winByPos)
-		pickRatesByRankAndPosition.set(rank, pickByPos)
+
+		// ALL: aggregate all ranks per position
+		const allWinByPos = new Map<HeroPosition, Map<number, number>>()
+		const allPickByPos = new Map<HeroPosition, Map<number, number>>()
+		for (const pos of HeroPositions) {
+			const { winRates: wr, pickRates: pr } = loadStatsForAllRanksAndPosition(
+				period,
+				pos
+			)
+			allWinByPos.set(pos, wr)
+			allPickByPos.set(pos, pr)
+		}
+		rankToWinByPos.set("ALL", allWinByPos)
+		rankToPickByPos.set("ALL", allPickByPos)
+
+		winRatesByRank.set(period, rankToWinRates)
+		pickRatesByRank.set(period, rankToPickRates)
+		winRatesByRankAndPosition.set(period, rankToWinByPos)
+		pickRatesByRankAndPosition.set(period, rankToPickByPos)
 	}
-	// ALL: aggregate all ranks per position
-	const allWinByPos = new Map<HeroPosition, Map<number, number>>()
-	const allPickByPos = new Map<HeroPosition, Map<number, number>>()
-	for (const pos of HeroPositions) {
-		const { winRates: wr, pickRates: pr } = loadStatsForAllRanksAndPosition(pos)
-		allWinByPos.set(pos, wr)
-		allPickByPos.set(pos, pr)
-	}
-	winRatesByRankAndPosition.set("ALL", allWinByPos)
-	pickRatesByRankAndPosition.set("ALL", allPickByPos)
 }
 
-export function getWinRatesByRank(rank: WinRateRank): Map<number, number> | undefined {
-	return winRatesByRank.get(rank)
+export function getWinRatesByRank(rank: WinRateRank): Nullable<Map<number, number>> {
+	return winRatesByRank.get(currentPeriod)?.get(rank)
 }
 
-export function getPickRatesByRank(rank: WinRateRank): Map<number, number> | undefined {
-	return pickRatesByRank.get(rank)
+export function getPickRatesByRank(rank: WinRateRank): Nullable<Map<number, number>> {
+	return pickRatesByRank.get(currentPeriod)?.get(rank)
 }
 
 export function getWinRatesByRankAndPosition(
 	rank: WinRateRank,
 	position: HeroPosition
-): Map<number, number> | undefined {
-	return winRatesByRankAndPosition.get(rank)?.get(position)
+): Nullable<Map<number, number>> {
+	return winRatesByRankAndPosition.get(currentPeriod)?.get(rank)?.get(position)
 }
 
 export function getPickRatesByRankAndPosition(
 	rank: WinRateRank,
 	position: HeroPosition
-): Map<number, number> | undefined {
-	return pickRatesByRankAndPosition.get(rank)?.get(position)
+): Nullable<Map<number, number>> {
+	return pickRatesByRankAndPosition.get(currentPeriod)?.get(rank)?.get(position)
 }
 
 /** Hero tier by win rate: S (≥54%), A (50–54%), B (46–50%), C (42–46%), D (<42%) */
@@ -239,18 +305,19 @@ export function getHeroTier(
 	heroId: number,
 	rank: WinRateRank,
 	position: HeroPosition
-): HeroTier | undefined {
+): Nullable<HeroTier> {
 	const winRates = getWinRatesByRankAndPosition(rank, position)
 	const winRate = winRates?.get(heroId)
 	if (winRate === undefined) {
 		return undefined
 	}
-	for (const { min, tier } of TIER_THRESHOLDS) {
+	for (let i = 0; i < TIER_THRESHOLDS.length; i++) {
+		const { min, tier } = TIER_THRESHOLDS[i]
 		if (winRate >= min) {
 			return tier
 		}
 	}
-	return "D"
+	return undefined
 }
 
 loadAllStatsByRank()

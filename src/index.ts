@@ -5,6 +5,7 @@ import {
 	EventsSDK,
 	GameRules,
 	GameState,
+	Sleeper,
 	UnitData
 } from "github.com/octarine-public/wrapper/index"
 
@@ -23,16 +24,17 @@ new (class CMetaTracker {
 	private readonly WIN_RATE_LABEL_ID = "OctarineWinRate"
 	private readonly TIER_PANEL_ID = "OctarineTierPanel"
 	private readonly TIER_LABEL_ID = "OctarineTierLabel"
-	/** Fixed sizes for overlay panels */
+
 	private readonly OVERLAY_PANEL_HEIGHT = "14px"
 	private readonly WIN_RATE_PANEL_WIDTH = "28px"
 	private readonly TIER_PANEL_WIDTH = "15px"
 
+	private readonly sleeper = new Sleeper()
 	private readonly menu = new MenuManager()
 	private isDestroyingHUD = false
 
 	constructor() {
-		this.menu.State.OnValue(() => this.ApplyWinRatesToHeroGrid())
+		this.menu.State.OnValue(() => this.applyWinRatesToHeroGrid())
 		EventsSDK.on("PostDataUpdate", this.OnPostDataUpdate.bind(this))
 		Panorama.SetWindowDestroyCallback(this.OnWindowDestroy.bind(this))
 		Panorama.SetWindowCreateCallback(this.OnWindowCreate.bind(this))
@@ -47,7 +49,6 @@ new (class CMetaTracker {
 			panel.GetContentHeight() !== 0
 		)
 	}
-
 	private setPanelStyle(panel: IUIPanel, styleParts: string[]): void {
 		const style = styleParts.join("; ") + ";"
 		const sym = Panorama.MakeSymbol("style")
@@ -55,7 +56,6 @@ new (class CMetaTracker {
 			panel.BSetProperty(sym, style)
 		}
 	}
-
 	private setLabelStyle(label: IUIPanel, color: string): void {
 		this.setPanelStyle(label, [
 			"width: 100%",
@@ -67,7 +67,6 @@ new (class CMetaTracker {
 			"text-shadow: 0 1px 2px rgba(0,0,0,0.8)"
 		])
 	}
-
 	private collectHeroCardPanels(root: IUIPanel): IUIPanel[] {
 		const cards: IUIPanel[] = []
 		const grid = root.FindChildTraverse("HeroGrid")
@@ -106,7 +105,6 @@ new (class CMetaTracker {
 		}
 		return cards
 	}
-
 	private getWinRateTextColor(pct: number): string {
 		if (pct < 50) {
 			return "#f87171"
@@ -116,7 +114,6 @@ new (class CMetaTracker {
 		}
 		return "#4ade80"
 	}
-
 	private setWinRatePanelStyle(panel: IUIPanel, _winRatePct: number): void {
 		this.setPanelStyle(panel, [
 			"width: " + this.WIN_RATE_PANEL_WIDTH,
@@ -126,11 +123,9 @@ new (class CMetaTracker {
 			"z-index: 10"
 		])
 	}
-
 	private setWinRateLabelStyle(label: IUIPanel, winRatePct: number): void {
 		this.setLabelStyle(label, this.getWinRateTextColor(winRatePct))
 	}
-
 	private getTierBackgroundColor(tier: string): string {
 		switch (tier) {
 			case "S":
@@ -147,7 +142,6 @@ new (class CMetaTracker {
 				return "rgba(0,0,0,0.85)"
 		}
 	}
-
 	private setTierPanelStyle(panel: IUIPanel, tier: string): void {
 		this.setPanelStyle(panel, [
 			"width: " + this.TIER_PANEL_WIDTH,
@@ -159,12 +153,10 @@ new (class CMetaTracker {
 			"z-index: 10"
 		])
 	}
-
 	private setTierLabelStyle(label: IUIPanel, _tier: string): void {
 		this.setLabelStyle(label, "#ffffff")
 	}
-
-	private getHeroIDFromCard(card: IUIPanel): number | undefined {
+	private getHeroIDFromCard(card: IUIPanel): Nullable<number> {
 		const contents = card.FindChild("HeroCardContents")
 		const parent = contents ?? card
 		const image = parent.FindChildTraverse("HeroImage") as Nullable<CImage>
@@ -178,12 +170,10 @@ new (class CMetaTracker {
 		}
 		return UnitData.GetHeroID(heroName)
 	}
-
 	private ensureOverlayContainer(card: IUIPanel): Nullable<IUIPanel> {
 		const overlays = card.FindChild("HeroCardOverlays")
 		const contents = card.FindChild("HeroCardContents")
 		const parent = overlays ?? contents ?? card
-
 		let container = parent.FindChildTraverse(this.OVERLAY_CONTAINER_ID)
 		if (container && container.BIsLoaded()) {
 			return container
@@ -193,7 +183,6 @@ new (class CMetaTracker {
 		if (!container || !container.BIsLoaded()) {
 			return undefined
 		}
-
 		this.setPanelStyle(container, [
 			"x: 4px",
 			"y: 4px",
@@ -203,7 +192,6 @@ new (class CMetaTracker {
 		])
 		return container
 	}
-
 	private ensureWinRatePanel(
 		container: IUIPanel,
 		winRatePct: number
@@ -233,7 +221,6 @@ new (class CMetaTracker {
 		}
 		return label
 	}
-
 	private ensureTierPanel(
 		container: IUIPanel,
 		tier: string | undefined
@@ -264,8 +251,7 @@ new (class CMetaTracker {
 		}
 		return label
 	}
-
-	private getWinRateByHeroId(heroID: number | undefined): number {
+	private getWinRateByHeroId(heroID: Nullable<number>): number {
 		if (heroID === undefined) {
 			return this.DEFAULT_WIN_RATE
 		}
@@ -274,8 +260,7 @@ new (class CMetaTracker {
 		const byHero = getWinRatesByRankAndPosition(rank, position)
 		return byHero?.get(heroID) ?? this.DEFAULT_WIN_RATE
 	}
-
-	private getTierForHero(heroID: number | undefined): string | undefined {
+	private getTierForHero(heroID: Nullable<number>): Nullable<string> {
 		if (heroID === undefined) {
 			return undefined
 		}
@@ -283,23 +268,10 @@ new (class CMetaTracker {
 		const position = getCurrentHeroPosition()
 		return getHeroTier(heroID, rank, position)
 	}
-
-	private setOverlayVisibility(container: IUIPanel, visible: boolean): void {
-		const visibility = visible ? "visible" : "collapse"
-		this.setPanelStyle(container, [
-			"x: 4px",
-			"y: 4px",
-			"flow-children: right",
-			"width: fit-children",
-			"height: " + this.OVERLAY_PANEL_HEIGHT,
-			"visibility: " + visibility
-		])
-	}
-
 	private applyWinRateToCard(
 		card: IUIPanel,
 		winRatePct: number,
-		heroID: number | undefined
+		heroID: Nullable<number>
 	): void {
 		const tier = this.getTierForHero(heroID)
 		if (winRatePct === 0 && tier === undefined) {
@@ -309,7 +281,11 @@ new (class CMetaTracker {
 		if (!container || !container.BIsLoaded()) {
 			return
 		}
-		this.setOverlayVisibility(container, true)
+		const state = this.menu.State.value
+		container.SetVisible(state)
+		if (!state) {
+			return
+		}
 		const winRateLabel = this.ensureWinRatePanel(container, winRatePct)
 		if (!winRateLabel || !winRateLabel.BIsLoaded()) {
 			return
@@ -317,9 +293,8 @@ new (class CMetaTracker {
 		winRateLabel.SetText(winRatePct.toFixed(0) + "%")
 		this.ensureTierPanel(container, tier)
 	}
-
-	public ApplyWinRatesToHeroGrid(state: DOTAGameUIState = GameState.UIState): void {
-		const isDashboard = state !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
+	private applyWinRatesToHeroGrid(uiState: DOTAGameUIState = GameState.UIState): void {
+		const isDashboard = uiState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
 		const root = !isDashboard
 			? Panorama.FindRootPanel("DotaHud")
 			: Panorama.FindRootPanel("DotaDashboard")
@@ -330,30 +305,37 @@ new (class CMetaTracker {
 			return
 		}
 		const cards = this.collectHeroCardPanels(root)
-		for (const card of cards) {
+		for (let i = cards.length - 1; i > -1; i--) {
+			const card = cards[i]
 			const heroID = this.getHeroIDFromCard(card)
+			if (heroID === undefined) {
+				continue
+			}
 			const winRate = this.getWinRateByHeroId(heroID)
 			this.applyWinRateToCard(card, winRate, heroID)
 		}
 	}
-
 	private OnPostDataUpdate(): void {
+		if (this.sleeper.Sleeping("applyWinRatesToHeroGrid")) {
+			return
+		}
 		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
 		if (GameRules && !isDashboard && GameRules.IsInGame) {
 			return
 		}
-		this.ApplyWinRatesToHeroGrid()
+		this.applyWinRatesToHeroGrid()
+		this.sleeper.Sleep(300, "applyWinRatesToHeroGrid")
 	}
-
 	private OnWindowDestroy(name: string): void {
 		if (name === "DotaHud") {
 			this.isDestroyingHUD = true
+			this.sleeper.FullReset()
 		}
 	}
-
 	private OnWindowCreate(name: string): void {
 		if (name === "DotaHud") {
 			this.isDestroyingHUD = false
+			this.sleeper.FullReset()
 		}
 	}
 })()
