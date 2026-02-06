@@ -74,6 +74,10 @@ const pickRatesByRankAndPosition = new Map<
 	WinRatePeriod,
 	Map<string, Map<HeroPosition, Map<number, number>>>
 >()
+const matchCountsByRankAndPosition = new Map<
+	WinRatePeriod,
+	Map<string, Map<HeroPosition, Map<number, number>>>
+>()
 
 const winRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
 const pickRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
@@ -110,11 +114,13 @@ export function setCurrentWinRatePeriod(period: WinRatePeriod): void {
 interface RankStats {
 	winRates: Map<number, number>
 	pickRates: Map<number, number>
+	matchCounts: Map<number, number>
 }
 
 function loadStatsForRank(period: WinRatePeriod, rank: string): RankStats {
 	const winRates = new Map<number, number>()
 	const pickRates = new Map<number, number>()
+	const matchCounts = new Map<number, number>()
 	try {
 		const path = `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
 		const data: WinRatesData = Utils.readJSON(path)
@@ -136,6 +142,7 @@ function loadStatsForRank(period: WinRatePeriod, rank: string): RankStats {
 		for (const [heroId, { wins, matches }] of aggregated) {
 			if (matches > 0) {
 				winRates.set(heroId, (100 * wins) / matches)
+				matchCounts.set(heroId, matches)
 				if (totalMatches > 0) {
 					pickRates.set(heroId, (100 * matches) / totalMatches)
 				}
@@ -144,7 +151,7 @@ function loadStatsForRank(period: WinRatePeriod, rank: string): RankStats {
 	} catch {
 		// keep maps empty on load error
 	}
-	return { winRates, pickRates }
+	return { winRates, pickRates, matchCounts }
 }
 
 function loadStatsForRankAndPosition(
@@ -154,13 +161,14 @@ function loadStatsForRankAndPosition(
 ): RankStats {
 	const winRates = new Map<number, number>()
 	const pickRates = new Map<number, number>()
+	const matchCounts = new Map<number, number>()
 	try {
 		const path = `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
 		const data: WinRatesData = Utils.readJSON(path)
 		const key = `heroesPos${position}`
 		const entries = getWinEntries(data, key, period)
 		if (!entries) {
-			return { winRates, pickRates }
+			return { winRates, pickRates, matchCounts }
 		}
 		let totalMatches = 0
 		for (const entry of entries) {
@@ -169,6 +177,7 @@ function loadStatsForRankAndPosition(
 		for (const entry of entries) {
 			if (entry.matchCount > 0) {
 				winRates.set(entry.heroId, (100 * entry.winCount) / entry.matchCount)
+				matchCounts.set(entry.heroId, entry.matchCount)
 				if (totalMatches > 0) {
 					pickRates.set(entry.heroId, (100 * entry.matchCount) / totalMatches)
 				}
@@ -177,7 +186,7 @@ function loadStatsForRankAndPosition(
 	} catch {
 		// keep maps empty on load error
 	}
-	return { winRates, pickRates }
+	return { winRates, pickRates, matchCounts }
 }
 
 function loadStatsForAllRanksAndPosition(
@@ -208,15 +217,17 @@ function loadStatsForAllRanksAndPosition(
 	}
 	const winRates = new Map<number, number>()
 	const pickRates = new Map<number, number>()
+	const matchCounts = new Map<number, number>()
 	for (const [heroId, { wins, matches }] of aggregated) {
 		if (matches > 0) {
 			winRates.set(heroId, (100 * wins) / matches)
+			matchCounts.set(heroId, matches)
 			if (totalMatches > 0) {
 				pickRates.set(heroId, (100 * matches) / totalMatches)
 			}
 		}
 	}
-	return { winRates, pickRates }
+	return { winRates, pickRates, matchCounts }
 }
 
 function loadAllStatsByRank(): void {
@@ -226,6 +237,7 @@ function loadAllStatsByRank(): void {
 		const rankToPickRates = new Map<string, Map<number, number>>()
 		const rankToWinByPos = new Map<string, Map<HeroPosition, Map<number, number>>>()
 		const rankToPickByPos = new Map<string, Map<HeroPosition, Map<number, number>>>()
+		const rankToMatchByPos = new Map<string, Map<HeroPosition, Map<number, number>>>()
 
 		for (const rank of RANKS) {
 			const { winRates, pickRates } = loadStatsForRank(period, rank)
@@ -234,37 +246,45 @@ function loadAllStatsByRank(): void {
 
 			const winByPos = new Map<HeroPosition, Map<number, number>>()
 			const pickByPos = new Map<HeroPosition, Map<number, number>>()
+			const matchByPos = new Map<HeroPosition, Map<number, number>>()
 			for (const pos of HeroPositions) {
-				const { winRates: wr, pickRates: pr } = loadStatsForRankAndPosition(
-					period,
-					rank,
-					pos
-				)
+				const {
+					winRates: wr,
+					pickRates: pr,
+					matchCounts: mc
+				} = loadStatsForRankAndPosition(period, rank, pos)
 				winByPos.set(pos, wr)
 				pickByPos.set(pos, pr)
+				matchByPos.set(pos, mc)
 			}
 			rankToWinByPos.set(rank, winByPos)
 			rankToPickByPos.set(rank, pickByPos)
+			rankToMatchByPos.set(rank, matchByPos)
 		}
 
 		// ALL: aggregate all ranks per position
 		const allWinByPos = new Map<HeroPosition, Map<number, number>>()
 		const allPickByPos = new Map<HeroPosition, Map<number, number>>()
+		const allMatchByPos = new Map<HeroPosition, Map<number, number>>()
 		for (const pos of HeroPositions) {
-			const { winRates: wr, pickRates: pr } = loadStatsForAllRanksAndPosition(
-				period,
-				pos
-			)
+			const {
+				winRates: wr,
+				pickRates: pr,
+				matchCounts: mc
+			} = loadStatsForAllRanksAndPosition(period, pos)
 			allWinByPos.set(pos, wr)
 			allPickByPos.set(pos, pr)
+			allMatchByPos.set(pos, mc)
 		}
 		rankToWinByPos.set("ALL", allWinByPos)
 		rankToPickByPos.set("ALL", allPickByPos)
+		rankToMatchByPos.set("ALL", allMatchByPos)
 
 		winRatesByRank.set(period, rankToWinRates)
 		pickRatesByRank.set(period, rankToPickRates)
 		winRatesByRankAndPosition.set(period, rankToWinByPos)
 		pickRatesByRankAndPosition.set(period, rankToPickByPos)
+		matchCountsByRankAndPosition.set(period, rankToMatchByPos)
 	}
 }
 
@@ -290,16 +310,14 @@ export function getPickRatesByRankAndPosition(
 	return pickRatesByRankAndPosition.get(currentPeriod)?.get(rank)?.get(position)
 }
 
-/** Hero tier by win rate: S (≥54%), A (50–54%), B (46–50%), C (42–46%), D (<42%) */
-export type HeroTier = "S" | "A" | "B" | "C" | "D"
+/** Minimum matches required to show a tier (avoids noise from tiny samples) */
+const MIN_MATCHES_FOR_TIER = 100
 
-const TIER_THRESHOLDS: { min: number; tier: HeroTier }[] = [
-	{ min: 54, tier: "S" },
-	{ min: 50, tier: "A" },
-	{ min: 46, tier: "B" },
-	{ min: 42, tier: "C" },
-	{ min: 0, tier: "D" }
-]
+/** Hero tier by percentile (quintiles) among heroes with enough games; no tier if sample too small */
+export type HeroTier = "S" | "A" | "B" | "C" | "D" | "?"
+
+/** Quintile boundaries: top 20% = S, next 20% = A, 40–60% = B, 60–80% = C, bottom 20% = D */
+const TIER_BY_QUINTILE: HeroTier[] = ["S", "A", "B", "C", "D"]
 
 export function getHeroTier(
 	heroId: number,
@@ -307,17 +325,38 @@ export function getHeroTier(
 	position: HeroPosition
 ): Nullable<HeroTier> {
 	const winRates = getWinRatesByRankAndPosition(rank, position)
-	const winRate = winRates?.get(heroId)
-	if (winRate === undefined) {
-		return undefined
+	const matchCounts = matchCountsByRankAndPosition
+		.get(currentPeriod)
+		?.get(rank)
+		?.get(position)
+	if (!winRates || !matchCounts) {
+		return "?"
 	}
-	for (let i = 0; i < TIER_THRESHOLDS.length; i++) {
-		const { min, tier } = TIER_THRESHOLDS[i]
-		if (winRate >= min) {
-			return tier
+	const winRate = winRates.get(heroId)
+	const matches = matchCounts.get(heroId)
+	if (
+		winRate === undefined ||
+		matches === undefined ||
+		matches < MIN_MATCHES_FOR_TIER
+	) {
+		return "?"
+	}
+	// Build list of heroes with enough games, sorted by win rate descending
+	const eligible: { heroId: number; winRate: number }[] = []
+	for (const [id, wr] of winRates) {
+		const m = matchCounts.get(id)
+		if (m !== undefined && m >= MIN_MATCHES_FOR_TIER) {
+			eligible.push({ heroId: id, winRate: wr })
 		}
 	}
-	return undefined
+	eligible.sort((a, b) => b.winRate - a.winRate)
+	const idx = eligible.findIndex(e => e.heroId === heroId)
+	if (idx < 0) {
+		return undefined
+	}
+	const n = eligible.length
+	const quintileIndex = n <= 1 ? 0 : Math.min(Math.floor((idx / n) * 5), 4)
+	return TIER_BY_QUINTILE[quintileIndex]
 }
 
 loadAllStatsByRank()

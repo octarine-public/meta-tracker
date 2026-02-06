@@ -26,7 +26,8 @@ export class MenuManager {
 		this.baseMenu.SortNodes = false
 		this.winRatePeriodDropdown = this.baseMenu.AddDropdown(
 			"Sort by win rate period",
-			PeriodOptions
+			PeriodOptions,
+			1
 		)
 		// 0 = ALL, 1 = HERALD, ... 8 = IMMORTAL; default ALL
 		this.winRateRankDropdown = this.baseMenu.AddDropdown(
