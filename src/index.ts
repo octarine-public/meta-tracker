@@ -42,7 +42,10 @@ new (class CMetaTracker {
 
 	constructor() {
 		this.heroStatsOverlay = new HeroStatsOverlay(this.dataProvider)
-		this.tierLegendPanel = new TierLegendPanel(this.informationPanelVisibility)
+		this.tierLegendPanel = new TierLegendPanel(
+			this.informationPanelVisibility,
+			this.menu
+		)
 
 		EventsSDK.on("PostDataUpdate", this.OnPostDataUpdate.bind(this))
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))

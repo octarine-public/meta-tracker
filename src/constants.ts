@@ -35,6 +35,9 @@ export const PICK_RATE_CONTAINER_ID = "OctarinePickRateOverlay"
 export const PICK_RATE_PANEL_ID = "OctarinePickRatePanel"
 export const PICK_RATE_LABEL_ID = "OctarinePickRateLabel"
 export const TIER_LEGEND_PANEL_ID = "OctarineTierLegendPanel"
+export const SETTINGS_CONTAINER_ID = "OctarineSettingsContainer"
+export const SETTINGS_ROW_HEIGHT = "28px"
+export const SETTINGS_DROPDOWN_HEIGHT = "24px"
 
 // Panel dimensions
 export const OVERLAY_PANEL_HEIGHT = "14px"

@@ -43,6 +43,34 @@ export class StratzMenu {
 		this.winRatePositionDropdown.IsHidden = !visible
 		this.winRatePeriodDropdown.IsHidden = !visible
 	}
+
+	public setPeriodIndex(index: number): void {
+		this.winRatePeriodDropdown.SelectedID = index
+		this.syncStateFromMenu()
+	}
+
+	public setRankIndex(index: number): void {
+		this.winRateRankDropdown.SelectedID = index
+		this.syncStateFromMenu()
+	}
+
+	public setPositionIndex(index: number): void {
+		this.winRatePositionDropdown.SelectedID = index
+		this.syncStateFromMenu()
+	}
+
+	public getPeriodIndex(): number {
+		return this.winRatePeriodDropdown.SelectedID
+	}
+
+	public getRankIndex(): number {
+		return this.winRateRankDropdown.SelectedID
+	}
+
+	public getPositionIndex(): number {
+		return this.winRatePositionDropdown.SelectedID
+	}
+
 	private syncStateFromMenu(): void {
 		if (
 			this.winRateRankDropdown.IsHidden ||

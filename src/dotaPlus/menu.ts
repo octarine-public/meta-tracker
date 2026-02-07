@@ -14,6 +14,16 @@ export class DotaPlusMenu {
 	public SetVisible(visible: boolean): void {
 		this.winRateRankDropdown.IsHidden = !visible
 	}
+
+	public setRankIndex(index: number): void {
+		this.winRateRankDropdown.SelectedID = index
+		this.syncRankChunk()
+	}
+
+	public getRankIndex(): number {
+		return this.winRateRankDropdown.SelectedID
+	}
+
 	private syncRankChunk(): void {
 		if (this.winRateRankDropdown.IsHidden) {
 			return
