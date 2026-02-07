@@ -5,7 +5,7 @@ import { setCurrentDotaPlusRankChunk } from "./data"
 
 export class DotaPlusMenu {
 	private readonly winRateRankDropdown: Menu.Dropdown
-	private readonly rankName = "DotaPlusRank"
+	private readonly rankName = "Rank"
 	constructor(node: Menu.Node) {
 		this.winRateRankDropdown = node.AddDropdown(this.rankName, RANKS_DOTA_PLUS, 1)
 		this.winRateRankDropdown.OnValue(() => this.syncRankChunk())
@@ -18,9 +18,10 @@ export class DotaPlusMenu {
 	public setRankIndex(index: number): void {
 		this.winRateRankDropdown.SelectedID = index
 		this.syncRankChunk()
+		Menu.Base.SaveConfigASAP = true
 	}
 
-	public getRankIndex(): number {
+	public get RankIndex(): number {
 		return this.winRateRankDropdown.SelectedID
 	}
 

@@ -15,7 +15,7 @@ export class MenuManager {
 	constructor() {
 		this.State = this.tree.AddToggle("State", true)
 		this.tree.SortNodes = false
-		this.statsType = this.tree.AddDropdown("Stats type", ["Dota 2", "Stratz"])
+		this.statsType = this.tree.AddDropdown("Stats", ["Dota 2", "Stratz"])
 
 		this.stratzMenu = new StratzMenu(this.tree)
 		this.dotaPlusMenu = new DotaPlusMenu(this.tree)

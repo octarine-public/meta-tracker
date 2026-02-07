@@ -16,9 +16,9 @@ export class StratzMenu {
 	private readonly winRateRankDropdown: Menu.Dropdown
 	private readonly winRatePositionDropdown: Menu.Dropdown
 
-	private readonly rankName = "StratzRank"
-	private readonly periodName = "StratzPeriod"
-	private readonly positionName = "StratzPosition"
+	private readonly rankName = "Rank"
+	private readonly periodName = "Period"
+	private readonly positionName = "Position"
 
 	constructor(node: Menu.Node) {
 		this.winRatePeriodDropdown = node.AddDropdown(
@@ -38,39 +38,35 @@ export class StratzMenu {
 		this.winRatePositionDropdown.OnValue(() => this.syncStateFromMenu())
 		this.syncStateFromMenu()
 	}
+	public get RankIndex(): number {
+		return this.winRateRankDropdown.SelectedID
+	}
+	public get PeriodIndex(): number {
+		return this.winRatePeriodDropdown.SelectedID
+	}
+	public get PositionIndex(): number {
+		return this.winRatePositionDropdown.SelectedID
+	}
 	public SetVisible(visible: boolean): void {
 		this.winRateRankDropdown.IsHidden = !visible
 		this.winRatePositionDropdown.IsHidden = !visible
 		this.winRatePeriodDropdown.IsHidden = !visible
 	}
-
 	public setPeriodIndex(index: number): void {
 		this.winRatePeriodDropdown.SelectedID = index
 		this.syncStateFromMenu()
+		Menu.Base.SaveConfigASAP = true
 	}
-
 	public setRankIndex(index: number): void {
 		this.winRateRankDropdown.SelectedID = index
 		this.syncStateFromMenu()
+		Menu.Base.SaveConfigASAP = true
 	}
-
 	public setPositionIndex(index: number): void {
 		this.winRatePositionDropdown.SelectedID = index
 		this.syncStateFromMenu()
+		Menu.Base.SaveConfigASAP = true
 	}
-
-	public getPeriodIndex(): number {
-		return this.winRatePeriodDropdown.SelectedID
-	}
-
-	public getRankIndex(): number {
-		return this.winRateRankDropdown.SelectedID
-	}
-
-	public getPositionIndex(): number {
-		return this.winRatePositionDropdown.SelectedID
-	}
-
 	private syncStateFromMenu(): void {
 		if (
 			this.winRateRankDropdown.IsHidden ||
