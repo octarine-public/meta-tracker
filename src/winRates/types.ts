@@ -43,7 +43,7 @@ export const PositionLabelList = [
 	"Offlane",
 	"Soft support",
 	"Hard support"
-] as const
+]
 
 export const HeroPositionLabels: Record<HeroPosition, string> = Object.fromEntries(
 	HeroPositions.map((pos, i) => [pos, PositionLabelList[i]])

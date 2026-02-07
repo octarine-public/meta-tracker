@@ -9,19 +9,18 @@ import {
 } from "github.com/octarine-public/wrapper/index"
 
 import { DEFAULT_WIN_RATE } from "./constants"
+import { DashboardSettingsPanel } from "./dashboardSettings/index"
 import {
 	getPickRateForHero,
 	getTierForHero as getDotaPlusTierForHero,
 	getWinRateForHero,
 	setDotaPlusData
 } from "./dotaPlus/index"
-import { HeroStatsOverlay } from "./heroStats/index"
-import { HeroStatsDataProvider } from "./heroStats/types"
-import { TierLegendPanel } from "./informationPanel/index"
-import { InformationPanelVisibility } from "./informationPanel/types"
+import { HeroStatsDataProvider, HeroStatsOverlay } from "./heroStats/index"
 import { MenuManager } from "./menu"
 import { HeroDataResponse } from "./models/heroDataTypes"
 import { isValidPanel } from "./panorama/utils"
+import { TierLegendPanel, TierLegendPanelVisibility } from "./tierLegend/index"
 import {
 	getCurrentHeroPosition,
 	getCurrentWinRateRank,
@@ -38,13 +37,13 @@ new (class CMetaTracker {
 	private readonly tierLegendPanel: TierLegendPanel
 
 	private readonly dataProvider = this.createHeroStatsDataProvider()
-	private readonly informationPanelVisibility = this.createInformationPanelVisibility()
+	private readonly tierLegendVisibility = this.createTierLegendVisibility()
 
 	constructor() {
 		this.heroStatsOverlay = new HeroStatsOverlay(this.dataProvider)
 		this.tierLegendPanel = new TierLegendPanel(
-			this.informationPanelVisibility,
-			this.menu
+			this.tierLegendVisibility,
+			new DashboardSettingsPanel(this.menu)
 		)
 
 		EventsSDK.on("PostDataUpdate", this.OnPostDataUpdate.bind(this))
@@ -136,7 +135,7 @@ new (class CMetaTracker {
 			}
 		}
 	}
-	private createInformationPanelVisibility(): InformationPanelVisibility {
+	private createTierLegendVisibility(): TierLegendPanelVisibility {
 		const menu = this.menu
 		return {
 			isVisible(): boolean {

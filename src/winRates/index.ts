@@ -21,9 +21,10 @@ import {
 	WinRateRank
 } from "./types"
 
+export type { HeroPosition, HeroTier, WinRatePeriod, WinRateRank }
+
 loadAllStatsByRank()
 
-export type { HeroPosition, HeroTier, WinRatePeriod, WinRateRank }
 export {
 	HeroPositionLabels,
 	HeroPositions,

@@ -2,6 +2,7 @@ import { UnitData } from "github.com/octarine-public/wrapper/index"
 
 import {
 	DEFAULT_PANEL_BG,
+	getTierBackgroundColor,
 	OVERLAY_CONTAINER_ID,
 	OVERLAY_PANEL_HEIGHT,
 	PICK_RATE_COLOR,
@@ -9,7 +10,6 @@ import {
 	PICK_RATE_LABEL_ID,
 	PICK_RATE_PANEL_ID,
 	PICK_RATE_PANEL_WIDTH,
-	TIER_BG_COLORS,
 	TIER_LABEL_ID,
 	TIER_PANEL_ID,
 	TIER_PANEL_WIDTH,
@@ -33,14 +33,6 @@ function setLabelStyle(label: IUIPanel, color: string): void {
 	])
 }
 
-function getTierBackgroundColor(tier: string): string {
-	return TIER_BG_COLORS[tier] ?? DEFAULT_PANEL_BG
-}
-
-/**
- * Renders win rate, tier badge and pick rate overlays on hero cards.
- * Reusable: pass a HeroStatsDataProvider (Dota 2, Stratz, or custom).
- */
 export class HeroStatsOverlay {
 	constructor(private readonly data: HeroStatsDataProvider) {}
 

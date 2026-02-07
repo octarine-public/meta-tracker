@@ -1,1 +1,0 @@
-export { TierLegendPanel } from "./tierLegend"

@@ -7,6 +7,9 @@ export const WIN_RATE_COLORS = {
 	high: "#4ade80"
 } as const
 
+// Default panel background
+export const DEFAULT_PANEL_BG = "rgba(0,0,0,0.85)"
+
 // Tier badge background colors
 export const TIER_BG_COLORS: Record<string, string> = {
 	S: "rgba(124,58,237,0.9)",
@@ -16,8 +19,9 @@ export const TIER_BG_COLORS: Record<string, string> = {
 	D: "rgba(239,68,68,0.9)"
 }
 
-// Default panel background
-export const DEFAULT_PANEL_BG = "rgba(0,0,0,0.85)"
+export function getTierBackgroundColor(tier: string): string {
+	return TIER_BG_COLORS[tier] ?? DEFAULT_PANEL_BG
+}
 
 // Default win rate when hero has no data
 export const DEFAULT_WIN_RATE = 0
@@ -37,7 +41,7 @@ export const PICK_RATE_LABEL_ID = "OctarinePickRateLabel"
 export const TIER_LEGEND_PANEL_ID = "OctarineTierLegendPanel"
 export const TIER_LEGEND_BOX_ID = "OctarineTierLegendBox"
 export const SETTINGS_PANEL_ID = "OctarineSettingsPanel"
-export const SETTINGS_PANEL_WIDTH = "180px"
+export const SETTINGS_PANEL_WIDTH = "200px"
 export const SETTINGS_CONTAINER_ID = "OctarineSettingsContainer"
 export const SETTINGS_ROW_HEIGHT = "28px"
 export const SETTINGS_LABEL_WIDTH = "85px"
