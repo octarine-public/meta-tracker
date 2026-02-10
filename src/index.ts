@@ -3,7 +3,6 @@ import "./translations"
 import {
 	DOTAGameUIState,
 	Events,
-	EventsSDK,
 	GameRules,
 	GameState
 } from "github.com/octarine-public/wrapper/index"
@@ -44,7 +43,7 @@ new (class CMetaTracker {
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
 		Events.on("DOTAFullHeroGlobalDataUpdated", this.GlobalDataUpdated.bind(this))
-		EventsSDK.on("Draw", this.rerender.bind(this))
+		Events.on("PanoramaFrame", this.PanoramaFrame.bind(this))
 		// EventsSDK.on("GameEnded", this.rerender.bind(this))
 		// EventsSDK.on("GameStarted", this.rerender.bind(this))
 
@@ -70,18 +69,22 @@ new (class CMetaTracker {
 		setDotaPlusData(arr)
 		this.applyWinRatesToHeroGrid()
 	}
-	private rerender(): void {
+	protected PanoramaFrame(): void {
 		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
-		if (GameRules && !isDashboard && GameRules.IsInGame) {
+		if (GameRules !== undefined && !isDashboard && GameRules.IsInGame) {
 			return
 		}
-		Panorama.EnterMainThread().then(async () => {
-			if (isDashboard) {
-				this.applyInformation()
-			}
-			this.applyWinRatesToHeroGrid()
-			await Panorama.LeaveMainThread()
-		})
+		Panorama.EnterMainThread()
+			.then(() => {
+				if (isDashboard) {
+					this.applyInformation()
+				}
+				this.applyWinRatesToHeroGrid()
+				void Panorama.LeaveMainThread()
+			})
+			.catch(error => {
+				console.error(error)
+			})
 	}
 	private applyWinRatesToHeroGrid(uiState: DOTAGameUIState = GameState.UIState): void {
 		const isDashboard = uiState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
