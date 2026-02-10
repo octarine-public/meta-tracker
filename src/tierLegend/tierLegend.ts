@@ -1,6 +1,7 @@
 import {
 	SETTINGS_PANEL_ID,
 	SETTINGS_PANEL_WIDTH,
+	TIER_LEGEND_BOX_ID,
 	TIER_LEGEND_PANEL_ID
 } from "../constants"
 import type { DashboardSettingsPanel } from "../dashboardSettings"
@@ -29,6 +30,7 @@ export class TierLegendPanel {
 			}
 			this.updateLabels(legendRoot)
 			this.settingsPanel.updateFromMenu(legendRoot)
+			this.applyVisibility(legendRoot)
 			legendRoot.SetVisible(state)
 			return
 		}
@@ -40,7 +42,27 @@ export class TierLegendPanel {
 		this.fillPanel(legendRoot)
 		this.updateLabels(legendRoot)
 		this.settingsPanel.updateFromMenu(legendRoot)
+		this.applyVisibility(legendRoot)
 		legendRoot.SetVisible(state)
+	}
+
+	private applyVisibility(legendRoot: IUIPanel): void {
+		const legendBox = legendRoot.FindChildTraverse(TIER_LEGEND_BOX_ID)
+		if (legendBox?.BIsLoaded()) {
+			legendBox.SetVisible(this.visibility.isTierLegendVisible())
+		}
+		const settingsPanelEl = legendRoot.FindChildTraverse(SETTINGS_PANEL_ID)
+		if (settingsPanelEl?.BIsLoaded()) {
+			const marginTop = this.visibility.isTierLegendVisible() ? "10px" : "0px"
+			setPanelStyle(settingsPanelEl, [
+				`width: ${SETTINGS_PANEL_WIDTH}`,
+				"height: fit-children",
+				"flow-children: down",
+				"border-radius: 6px",
+				"padding: 12px 14px",
+				`margin-top: ${marginTop}`
+			])
+		}
 	}
 
 	private fillPanel(legendRoot: IUIPanel): void {

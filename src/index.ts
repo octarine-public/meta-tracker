@@ -136,7 +136,10 @@ new (class CMetaTracker {
 		const menu = this.menu
 		return {
 			isVisible(): boolean {
-				return menu.State.value && menu.TierListEnabled.value
+				return menu.State.value
+			},
+			isTierLegendVisible(): boolean {
+				return menu.TierListEnabled.value
 			},
 			setInformationPanelVisible(visible: boolean): void {
 				menu.State.value = visible

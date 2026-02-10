@@ -43,7 +43,7 @@ export const RankOptions = ["ALL", ...RANKS]
 export type WinRateRank = (typeof RankOptions)[number]
 
 export const PositionLabelList = [
-	"ALL",
+	"All positions",
 	"Carry",
 	"Mid",
 	"Offlane",
