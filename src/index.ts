@@ -3,6 +3,7 @@ import "./translations"
 import {
 	DOTAGameUIState,
 	Events,
+	EventsSDK,
 	GameRules,
 	GameState
 } from "github.com/octarine-public/wrapper/index"
@@ -44,6 +45,7 @@ new (class CMetaTracker {
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
 		Events.on("DOTAFullHeroGlobalDataUpdated", this.GlobalDataUpdated.bind(this))
 		Events.on("PanoramaFrame", this.PanoramaFrame.bind(this))
+		EventsSDK.on("MenuConfigChanged", this.rerenderPanorama.bind(this))
 		// EventsSDK.on("GameEnded", this.rerender.bind(this))
 		// EventsSDK.on("GameStarted", this.rerender.bind(this))
 
@@ -52,7 +54,6 @@ new (class CMetaTracker {
 		// EventsSDK.on("GameStateChanged", this.rerender.bind(this))
 		// EventsSDK.on("WindowSizeChanged", this.rerender.bind(this))
 
-		// EventsSDK.on("MenuConfigChanged", this.rerender.bind(this))
 		// EventsSDK.on("PlayerCustomDataUpdated", this.rerender.bind(this))
 	}
 	protected PanoramaWindowDestroy(name: string): void {
@@ -67,24 +68,10 @@ new (class CMetaTracker {
 	}
 	protected GlobalDataUpdated(arr: HeroDataResponse[]): void {
 		setDotaPlusData(arr)
-		this.applyWinRatesToHeroGrid()
+		this.rerenderPanorama()
 	}
 	protected PanoramaFrame(): void {
-		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
-		if (GameRules !== undefined && !isDashboard && GameRules.IsInGame) {
-			return
-		}
-		Panorama.EnterMainThread()
-			.then(() => {
-				if (isDashboard) {
-					this.applyInformation()
-				}
-				this.applyWinRatesToHeroGrid()
-				void Panorama.LeaveMainThread()
-			})
-			.catch(error => {
-				console.error(error)
-			})
+		this.rerenderPanorama()
 	}
 	private applyWinRatesToHeroGrid(uiState: DOTAGameUIState = GameState.UIState): void {
 		const isDashboard = uiState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
@@ -153,5 +140,22 @@ new (class CMetaTracker {
 				menu.State.value = visible
 			}
 		}
+	}
+	private rerenderPanorama(): void {
+		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
+		if (GameRules !== undefined && !isDashboard && GameRules.IsInGame) {
+			return
+		}
+		Panorama.EnterMainThread()
+			.then(() => {
+				if (isDashboard) {
+					this.applyInformation()
+				}
+				this.applyWinRatesToHeroGrid()
+				void Panorama.LeaveMainThread()
+			})
+			.catch(error => {
+				console.error(error)
+			})
 	}
 })()
