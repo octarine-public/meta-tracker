@@ -56,7 +56,7 @@ export const SETTINGS_LIST_ITEM_FONT_SIZE = "13px"
 export const OVERLAY_PANEL_HEIGHT = "14px"
 export const WIN_RATE_PANEL_WIDTH = "28px"
 export const TIER_PANEL_WIDTH = "15px"
-export const PICK_RATE_PANEL_WIDTH = "32px"
+export const PICK_RATE_PANEL_WIDTH = "36px"
 
 // Tier legend panel (left side of heroes page)
 export const TIER_LEGEND_WIDTH = "180px"

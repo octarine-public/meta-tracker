@@ -93,7 +93,7 @@ export class HeroStatsOverlay {
 	private getHeroIDFromCard(card: IUIPanel): number | undefined {
 		const contents = card.FindChild("HeroCardContents")
 		const parent = contents ?? card
-		const image = parent.FindChildTraverse("HeroImage") as Nullable<CImage>
+		const image = parent.FindChildTraverse<CImage>("HeroImage")
 		if (!isValidPanel(image)) {
 			return undefined
 		}
