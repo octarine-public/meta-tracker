@@ -3,7 +3,6 @@ import "./translations"
 import {
 	DOTAGameUIState,
 	Events,
-	EventsSDK,
 	GameRules,
 	GameState
 } from "github.com/octarine-public/wrapper/index"
@@ -41,8 +40,7 @@ new (class CMetaTracker {
 	)
 
 	constructor() {
-		this.menu.MenuConfigChanged(this.rerenderPanorama.bind(this))
-		EventsSDK.on("MenuConfigChanged", this.rerenderPanorama.bind(this))
+		this.menu.MenuConfigChanged(() => this.rerenderPanorama())
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
 		Events.on("DOTAFullHeroGlobalDataUpdated", this.GlobalDataUpdated.bind(this))
@@ -141,6 +139,7 @@ new (class CMetaTracker {
 		}
 	}
 	private rerenderPanorama(): void {
+		console.log("rerenderPanorama")
 		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
 		if (GameRules !== undefined && !isDashboard && GameRules.IsInGame) {
 			return
