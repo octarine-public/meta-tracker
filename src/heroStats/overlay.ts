@@ -1,8 +1,8 @@
-import { UnitData } from "github.com/octarine-public/wrapper/index"
-
 import {
 	DEFAULT_PANEL_BG,
 	getTierBackgroundColor,
+	HERO_CARD_OVERLAYS_CLASS,
+	HERO_ID_ATTR,
 	OVERLAY_CONTAINER_ID,
 	OVERLAY_PANEL_HEIGHT,
 	PICK_RATE_COLOR,
@@ -44,10 +44,10 @@ export class HeroStatsOverlay {
 			if (heroID === undefined) {
 				continue
 			}
-			const winRate = this.data.getWinRate(heroID)
 			const tier = this.data.getTier(heroID)
+			const winRate = this.data.getWinRate(heroID)
 			const pickRate = this.data.getPickRate(heroID)
-			this.applyToCard(card, heroID, winRate, tier, pickRate)
+			this.applyToCard(card, winRate, tier, pickRate)
 		}
 	}
 
@@ -93,21 +93,14 @@ export class HeroStatsOverlay {
 	private getHeroIDFromCard(card: IUIPanel): number | undefined {
 		const contents = card.FindChild("HeroCardContents")
 		const parent = contents ?? card
-		const image = parent.FindChildTraverse<CImage>("HeroImage")
-		if (!isValidPanel(image)) {
+		const heroID = parent.GetAttribute(HERO_ID_ATTR, "-1") // -1 is invalid hero ID
+		if (heroID === undefined || heroID === "-1") {
 			return undefined
 		}
-		const imageSrc = image.GetImage()
-		const heroName = imageSrc.split("/").pop()?.split(".")[0]
-		if (heroName === undefined) {
-			return undefined
-		}
-		return UnitData.GetHeroID(heroName)
+		return Number(heroID)
 	}
-
 	public applyToCard(
 		card: IUIPanel,
-		heroID: Nullable<number>,
 		winRatePct: number,
 		tier: Nullable<string>,
 		pickRatePct: number
@@ -156,7 +149,7 @@ export class HeroStatsOverlay {
 			return container
 		}
 		container = Panorama.CreatePanel("Panel", OVERLAY_CONTAINER_ID, parent)
-		container?.AddClass(Panorama.MakeSymbol("HeroCardOverlays"))
+		container?.AddClass(HERO_CARD_OVERLAYS_CLASS)
 		if (!container?.BIsLoaded()) {
 			return undefined
 		}
