@@ -47,6 +47,12 @@ export class StratzMenu {
 	public get PositionIndex(): number {
 		return this.winRatePositionDropdown.SelectedID
 	}
+	public MenuConfigChanged(callback: () => void): void {
+		this.winRateRankDropdown.OnValue(_ => callback())
+		this.winRatePeriodDropdown.OnValue(_ => callback())
+		this.winRatePositionDropdown.OnValue(_ => callback())
+		callback()
+	}
 	public SetVisible(visible: boolean): void {
 		this.winRateRankDropdown.IsHidden = !visible
 		this.winRatePositionDropdown.IsHidden = !visible

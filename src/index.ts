@@ -41,19 +41,18 @@ new (class CMetaTracker {
 	)
 
 	constructor() {
+		this.menu.MenuConfigChanged(this.rerenderPanorama.bind(this))
+		EventsSDK.on("MenuConfigChanged", this.rerenderPanorama.bind(this))
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
 		Events.on("DOTAFullHeroGlobalDataUpdated", this.GlobalDataUpdated.bind(this))
 		Events.on("PanoramaFrame", this.PanoramaFrame.bind(this))
-		EventsSDK.on("MenuConfigChanged", this.rerenderPanorama.bind(this))
 		// EventsSDK.on("GameEnded", this.rerender.bind(this))
 		// EventsSDK.on("GameStarted", this.rerender.bind(this))
-
 		// EventsSDK.on("ServerInfo", this.rerender.bind(this))
 		// EventsSDK.on("MapDataLoaded", this.rerender.bind(this))
 		// EventsSDK.on("GameStateChanged", this.rerender.bind(this))
 		// EventsSDK.on("WindowSizeChanged", this.rerender.bind(this))
-
 		// EventsSDK.on("PlayerCustomDataUpdated", this.rerender.bind(this))
 	}
 	protected PanoramaWindowDestroy(name: string): void {
