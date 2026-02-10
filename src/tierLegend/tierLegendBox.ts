@@ -80,69 +80,6 @@ export function buildTierLegendBox(legendRoot: IUIPanel): void {
 			])
 		}
 	}
-	const pickRateRow = Panorama.CreatePanel(
-		"Panel",
-		"OctarineTierLegendPickRateRow",
-		legendBox
-	)
-	if (pickRateRow?.BIsLoaded()) {
-		setPanelStyle(pickRateRow, [
-			"width: 100%",
-			`height: ${TIER_LEGEND_BADGE_SIZE}`,
-			"flow-children: right",
-			"vertical-align: center",
-			"margin-bottom: 6px"
-		])
-		const pickRateBadge = Panorama.CreatePanel(
-			"Panel",
-			"OctarineTierLegendPickRateBadge",
-			pickRateRow
-		)
-		if (pickRateBadge?.BIsLoaded()) {
-			setPanelStyle(pickRateBadge, [
-				`width: ${TIER_LEGEND_BADGE_SIZE}`,
-				`height: ${TIER_LEGEND_BADGE_SIZE}`,
-				`background-color: ${PICK_RATE_COLOR}`,
-				"border-radius: 3px",
-				"margin-right: 10px"
-			])
-			const pickRateBadgeLabel = Panorama.CreatePanel<CLabel>(
-				"Label",
-				"OctarineTierLegendPickRateBadgeLabel",
-				pickRateBadge
-			)
-			if (pickRateBadgeLabel?.BIsLoaded()) {
-				setPanelStyle(pickRateBadgeLabel, [
-					"width: 100%",
-					"height: 100%",
-					"line-height: 16px",
-					"font-size: 11px",
-					"font-weight: bold",
-					"color: #ffffff",
-					"text-align: center",
-					"vertical-align: center"
-				])
-				pickRateBadgeLabel.SetText("P")
-			}
-		}
-		const pickRateDescLabel = Panorama.CreatePanel<CLabel>(
-			"Label",
-			"OctarineTierLegendPickRateDesc",
-			pickRateRow
-		)
-		if (pickRateDescLabel?.BIsLoaded()) {
-			setPanelStyle(pickRateDescLabel, [
-				"width: fill",
-				`height: ${TIER_LEGEND_BADGE_SIZE}`,
-				`line-height: ${TIER_LEGEND_BADGE_SIZE}`,
-				`font-size: ${TIER_LEGEND_DESC_FONT_SIZE}`,
-				"color: #cbd5e1",
-				"text-align: left",
-				"vertical-align: center",
-				"text-overflow: shrink"
-			])
-		}
-	}
 	for (let i = 0; i < TIER_ORDER.length; i++) {
 		const tier = TIER_ORDER[i]
 		const row = Panorama.CreatePanel(
@@ -199,6 +136,69 @@ export function buildTierLegendBox(legendRoot: IUIPanel): void {
 		)
 		if (descLabel?.BIsLoaded()) {
 			setPanelStyle(descLabel, [
+				"width: fill",
+				`height: ${TIER_LEGEND_BADGE_SIZE}`,
+				`line-height: ${TIER_LEGEND_BADGE_SIZE}`,
+				`font-size: ${TIER_LEGEND_DESC_FONT_SIZE}`,
+				"color: #cbd5e1",
+				"text-align: left",
+				"vertical-align: center",
+				"text-overflow: shrink"
+			])
+		}
+	}
+	const pickRateRow = Panorama.CreatePanel(
+		"Panel",
+		"OctarineTierLegendPickRateRow",
+		legendBox
+	)
+	if (pickRateRow?.BIsLoaded()) {
+		setPanelStyle(pickRateRow, [
+			"width: 100%",
+			`height: ${TIER_LEGEND_BADGE_SIZE}`,
+			"flow-children: right",
+			"vertical-align: center",
+			"margin-bottom: 6px"
+		])
+		const pickRateBadge = Panorama.CreatePanel(
+			"Panel",
+			"OctarineTierLegendPickRateBadge",
+			pickRateRow
+		)
+		if (pickRateBadge?.BIsLoaded()) {
+			setPanelStyle(pickRateBadge, [
+				`width: ${TIER_LEGEND_BADGE_SIZE}`,
+				`height: ${TIER_LEGEND_BADGE_SIZE}`,
+				`background-color: ${PICK_RATE_COLOR}`,
+				"border-radius: 3px",
+				"margin-right: 10px"
+			])
+			const pickRateBadgeLabel = Panorama.CreatePanel<CLabel>(
+				"Label",
+				"OctarineTierLegendPickRateBadgeLabel",
+				pickRateBadge
+			)
+			if (pickRateBadgeLabel?.BIsLoaded()) {
+				setPanelStyle(pickRateBadgeLabel, [
+					"width: 100%",
+					"height: 100%",
+					"line-height: 16px",
+					"font-size: 11px",
+					"font-weight: bold",
+					"color: #ffffff",
+					"text-align: center",
+					"vertical-align: center"
+				])
+				pickRateBadgeLabel.SetText("P")
+			}
+		}
+		const pickRateDescLabel = Panorama.CreatePanel<CLabel>(
+			"Label",
+			"OctarineTierLegendPickRateDesc",
+			pickRateRow
+		)
+		if (pickRateDescLabel?.BIsLoaded()) {
+			setPanelStyle(pickRateDescLabel, [
 				"width: fill",
 				`height: ${TIER_LEGEND_BADGE_SIZE}`,
 				`line-height: ${TIER_LEGEND_BADGE_SIZE}`,
