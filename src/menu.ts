@@ -27,15 +27,6 @@ export class MenuManager {
 	public get StatsTypeIndex(): number {
 		return this.statsType.SelectedID
 	}
-	public MenuConfigChanged(callback: () => void): void {
-		this.State.OnValue(_ => callback())
-		this.statsType.OnValue(val => {
-			this.statsTypeChanged(val)
-			callback()
-		})
-		this.stratzMenu.MenuConfigChanged(callback)
-		this.dotaPlusMenu.MenuConfigChanged(callback)
-	}
 	/** Set stats type from panorama (0 = Dota 2, 1 = Stratz) */
 	public setStatsTypeIndex(index: number): void {
 		if (this.statsType.SelectedID === index) {

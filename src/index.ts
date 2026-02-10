@@ -3,6 +3,7 @@ import "./translations"
 import {
 	DOTAGameUIState,
 	Events,
+	EventsSDK,
 	GameRules,
 	GameState
 } from "github.com/octarine-public/wrapper/index"
@@ -40,18 +41,19 @@ new (class CMetaTracker {
 	)
 
 	constructor() {
-		this.menu.MenuConfigChanged(() => this.rerenderPanorama())
+		Events.on("PanoramaFrame", this.PanoramaFrame.bind(this))
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
 		Events.on("DOTAFullHeroGlobalDataUpdated", this.GlobalDataUpdated.bind(this))
-		Events.on("PanoramaFrame", this.PanoramaFrame.bind(this))
-		// EventsSDK.on("GameEnded", this.rerender.bind(this))
-		// EventsSDK.on("GameStarted", this.rerender.bind(this))
-		// EventsSDK.on("ServerInfo", this.rerender.bind(this))
-		// EventsSDK.on("MapDataLoaded", this.rerender.bind(this))
-		// EventsSDK.on("GameStateChanged", this.rerender.bind(this))
-		// EventsSDK.on("WindowSizeChanged", this.rerender.bind(this))
-		// EventsSDK.on("PlayerCustomDataUpdated", this.rerender.bind(this))
+
+		EventsSDK.on("GameEnded", this.rerenderPanorama.bind(this))
+		EventsSDK.on("GameStarted", this.rerenderPanorama.bind(this))
+		EventsSDK.on("ServerInfo", this.rerenderPanorama.bind(this))
+		EventsSDK.on("MapDataLoaded", this.rerenderPanorama.bind(this))
+		EventsSDK.on("GameStateChanged", this.rerenderPanorama.bind(this))
+		EventsSDK.on("MenuConfigChanged", this.rerenderPanorama.bind(this))
+		EventsSDK.on("WindowSizeChanged", this.rerenderPanorama.bind(this))
+		EventsSDK.on("PlayerCustomDataUpdated", this.rerenderPanorama.bind(this))
 	}
 	protected PanoramaWindowDestroy(name: string): void {
 		if (name === "DotaHud") {
@@ -139,7 +141,6 @@ new (class CMetaTracker {
 		}
 	}
 	private rerenderPanorama(): void {
-		console.log("rerenderPanorama")
 		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
 		if (GameRules !== undefined && !isDashboard && GameRules.IsInGame) {
 			return
