@@ -22,8 +22,7 @@ type TierLegendKey =
 	| "Tier C"
 	| "Tier D"
 	| "Tier ?"
-	| "Pick rate legend term"
-	| "Pick rate legend desc"
+	| "Pick rate legend"
 
 function getTierLegendText(key: TierLegendKey): string {
 	return Menu.Localization.Localize(key)
@@ -81,45 +80,65 @@ export function buildTierLegendBox(legendRoot: IUIPanel): void {
 			])
 		}
 	}
-	const pickRateHintRow = Panorama.CreatePanel(
+	const pickRateRow = Panorama.CreatePanel(
 		"Panel",
-		"OctarineTierLegendPickRateHintRow",
+		"OctarineTierLegendPickRateRow",
 		legendBox
 	)
-	if (pickRateHintRow?.BIsLoaded()) {
-		setPanelStyle(pickRateHintRow, [
+	if (pickRateRow?.BIsLoaded()) {
+		setPanelStyle(pickRateRow, [
 			"width: 100%",
-			"height: fit-children",
+			`height: ${TIER_LEGEND_BADGE_SIZE}`,
 			"flow-children: right",
-			"margin-bottom: 10px"
+			"vertical-align: center",
+			"margin-bottom: 6px"
 		])
-		const pickRateTermLabel = Panorama.CreatePanel<CLabel>(
-			"Label",
-			"OctarineTierLegendPickRateTerm",
-			pickRateHintRow
+		const pickRateBadge = Panorama.CreatePanel(
+			"Panel",
+			"OctarineTierLegendPickRateBadge",
+			pickRateRow
 		)
-		if (pickRateTermLabel?.BIsLoaded()) {
-			setPanelStyle(pickRateTermLabel, [
-				"width: fit-children",
-				"height: fit-children",
-				"font-size: 12px",
-				`color: ${PICK_RATE_COLOR}`,
-				"text-align: left",
-				"text-overflow: shrink"
+		if (pickRateBadge?.BIsLoaded()) {
+			setPanelStyle(pickRateBadge, [
+				`width: ${TIER_LEGEND_BADGE_SIZE}`,
+				`height: ${TIER_LEGEND_BADGE_SIZE}`,
+				`background-color: ${PICK_RATE_COLOR}`,
+				"border-radius: 3px",
+				"margin-right: 10px"
 			])
+			const pickRateBadgeLabel = Panorama.CreatePanel<CLabel>(
+				"Label",
+				"OctarineTierLegendPickRateBadgeLabel",
+				pickRateBadge
+			)
+			if (pickRateBadgeLabel?.BIsLoaded()) {
+				setPanelStyle(pickRateBadgeLabel, [
+					"width: 100%",
+					"height: 100%",
+					"line-height: 16px",
+					"font-size: 11px",
+					"font-weight: bold",
+					"color: #ffffff",
+					"text-align: center",
+					"vertical-align: center"
+				])
+				pickRateBadgeLabel.SetText("P")
+			}
 		}
 		const pickRateDescLabel = Panorama.CreatePanel<CLabel>(
 			"Label",
 			"OctarineTierLegendPickRateDesc",
-			pickRateHintRow
+			pickRateRow
 		)
 		if (pickRateDescLabel?.BIsLoaded()) {
 			setPanelStyle(pickRateDescLabel, [
 				"width: fill",
-				"height: fit-children",
-				"font-size: 12px",
-				"color: #94a3b8",
+				`height: ${TIER_LEGEND_BADGE_SIZE}`,
+				`line-height: ${TIER_LEGEND_BADGE_SIZE}`,
+				`font-size: ${TIER_LEGEND_DESC_FONT_SIZE}`,
+				"color: #cbd5e1",
 				"text-align: left",
+				"vertical-align: center",
 				"text-overflow: shrink"
 			])
 		}
@@ -198,17 +217,11 @@ export function updateTierLegendLabels(legendRoot: IUIPanel): void {
 	if (titleLabel?.BIsLoaded()) {
 		titleLabel.SetText(getTierLegendText("Tier legend"))
 	}
-	const pickRateTerm = legendRoot.FindChildTraverse<CLabel>(
-		"OctarineTierLegendPickRateTerm"
-	)
-	if (pickRateTerm?.BIsLoaded()) {
-		pickRateTerm.SetText(getTierLegendText("Pick rate legend term"))
-	}
 	const pickRateDesc = legendRoot.FindChildTraverse<CLabel>(
 		"OctarineTierLegendPickRateDesc"
 	)
 	if (pickRateDesc?.BIsLoaded()) {
-		pickRateDesc.SetText(getTierLegendText("Pick rate legend desc"))
+		pickRateDesc.SetText(getTierLegendText("Pick rate legend"))
 	}
 	const tierKey = (tier: string): TierLegendKey => `Tier ${tier}` as TierLegendKey
 	for (const tier of TIER_ORDER) {
