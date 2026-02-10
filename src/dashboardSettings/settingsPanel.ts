@@ -183,12 +183,12 @@ export class DashboardSettingsPanel {
 
 	public updateFromMenu(legendRoot: IUIPanel): void {
 		this.updateRowLabels(legendRoot)
-		const isDota2 = this.menu.isDota2Source()
+		const isDota2 = this.menu.isDota2Source
 		this.updateRowSelection(
 			legendRoot,
 			"OctarineStatsType",
 			[...STATS_TYPE_OPTIONS],
-			this.menu.getStatsTypeIndex()
+			this.menu.StatsTypeIndex
 		)
 		const periodRow = legendRoot.FindChildTraverse("OctarinePeriod")
 		if (periodRow?.BIsLoaded()) {
@@ -280,11 +280,7 @@ export class DashboardSettingsPanel {
 			"flow-children: right",
 			"vertical-align: center"
 		])
-		const label = Panorama.CreatePanel(
-			"Label",
-			`${rowId}Label`,
-			topRow
-		) as Nullable<CLabel>
+		const label = Panorama.CreatePanel<CLabel>("Label", `${rowId}Label`, topRow)
 		if (label?.BIsLoaded()) {
 			setPanelStyle(label, [
 				`width: ${SETTINGS_LABEL_WIDTH}`,
@@ -345,11 +341,11 @@ export class DashboardSettingsPanel {
 			"border-radius: 4px",
 			"padding: 2px 6px"
 		])
-		const valueLabel = Panorama.CreatePanel(
+		const valueLabel = Panorama.CreatePanel<CLabel>(
 			"Label",
 			`${rowId}ValueLabel`,
 			valuePanel
-		) as Nullable<CLabel>
+		)
 		if (valueLabel?.BIsLoaded()) {
 			setPanelStyle(valueLabel, [
 				"width: fill",
@@ -399,11 +395,11 @@ export class DashboardSettingsPanel {
 			"border-radius: 4px",
 			"padding: 2px 6px"
 		])
-		const valueLabel = Panorama.CreatePanel(
+		const valueLabel = Panorama.CreatePanel<CLabel>(
 			"Label",
 			`${rowId}ValueLabel`,
 			valuePanel
-		) as Nullable<CLabel>
+		)
 		if (valueLabel?.BIsLoaded()) {
 			setPanelStyle(valueLabel, [
 				"width: fill",
@@ -453,11 +449,11 @@ export class DashboardSettingsPanel {
 				"padding: 2px 6px",
 				"background-color: transparent"
 			])
-			const optLabel = Panorama.CreatePanel(
+			const optLabel = Panorama.CreatePanel<CLabel>(
 				"Label",
 				`${rowId}ListOptLabel_${i}`,
 				optPanel
-			) as Nullable<CLabel>
+			)
 			if (optLabel?.BIsLoaded()) {
 				setPanelStyle(optLabel, [
 					"width: fill",
@@ -490,9 +486,7 @@ export class DashboardSettingsPanel {
 
 	private updateRowLabels(legendRoot: IUIPanel): void {
 		for (const [rowId, labelKey] of Object.entries(SETTINGS_ROW_LABEL_KEYS)) {
-			const label = legendRoot.FindChildTraverse(
-				`${rowId}Label`
-			) as Nullable<CLabel>
+			const label = legendRoot.FindChildTraverse<CLabel>(`${rowId}Label`)
 			if (label?.BIsLoaded()) {
 				label.SetText(localizeLabel(labelKey))
 			}
@@ -503,9 +497,9 @@ export class DashboardSettingsPanel {
 			}
 			const { optionKeys } = action
 			for (let i = 0; i < optionKeys.length; i++) {
-				const optLabel = legendRoot.FindChildTraverse(
+				const optLabel = legendRoot.FindChildTraverse<CLabel>(
 					`${rowId}ListOptLabel_${i}`
-				) as Nullable<CLabel>
+				)
 				if (optLabel?.BIsLoaded()) {
 					optLabel.SetText(localizeOption(optionKeys[i]))
 				}
@@ -519,9 +513,7 @@ export class DashboardSettingsPanel {
 		optionKeys: readonly string[],
 		selectedIndex: number
 	): void {
-		const valueLabel = legendRoot.FindChildTraverse(
-			`${rowId}ValueLabel`
-		) as Nullable<CLabel>
+		const valueLabel = legendRoot.FindChildTraverse<CLabel>(`${rowId}ValueLabel`)
 		if (valueLabel?.BIsLoaded()) {
 			valueLabel.SetText(localizeOption(optionKeys[selectedIndex] ?? optionKeys[0]))
 		}

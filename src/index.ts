@@ -31,41 +31,30 @@ import {
 
 new (class CMetaTracker {
 	private isDestroyingHUD = false
-
 	private readonly menu = new MenuManager()
-	private readonly heroStatsOverlay: HeroStatsOverlay
-	private readonly tierLegendPanel: TierLegendPanel
-
 	private readonly dataProvider = this.createHeroStatsDataProvider()
 	private readonly tierLegendVisibility = this.createTierLegendVisibility()
+	private readonly heroStatsOverlay = new HeroStatsOverlay(this.dataProvider)
+	private readonly tierLegendPanel = new TierLegendPanel(
+		this.tierLegendVisibility,
+		new DashboardSettingsPanel(this.menu)
+	)
 
 	constructor() {
-		this.heroStatsOverlay = new HeroStatsOverlay(this.dataProvider)
-		this.tierLegendPanel = new TierLegendPanel(
-			this.tierLegendVisibility,
-			new DashboardSettingsPanel(this.menu)
-		)
-
-		EventsSDK.on("Draw", this.Draw.bind(this))
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
-		Events.on(
-			"DOTAFullHeroGlobalDataUpdated",
-			this.OnFullHeroGlobalDataUpdated.bind(this)
-		)
-	}
-	protected Draw(): void {
-		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
-		if (GameRules && !isDashboard && GameRules.IsInGame) {
-			return
-		}
-		Panorama.EnterMainThread().then(async () => {
-			if (isDashboard) {
-				this.applyInformation()
-			}
-			this.applyWinRatesToHeroGrid()
-			await Panorama.LeaveMainThread()
-		})
+		Events.on("DOTAFullHeroGlobalDataUpdated", this.GlobalDataUpdated.bind(this))
+		EventsSDK.on("Draw", this.rerender.bind(this))
+		// EventsSDK.on("GameEnded", this.rerender.bind(this))
+		// EventsSDK.on("GameStarted", this.rerender.bind(this))
+
+		// EventsSDK.on("ServerInfo", this.rerender.bind(this))
+		// EventsSDK.on("MapDataLoaded", this.rerender.bind(this))
+		// EventsSDK.on("GameStateChanged", this.rerender.bind(this))
+		// EventsSDK.on("WindowSizeChanged", this.rerender.bind(this))
+
+		// EventsSDK.on("MenuConfigChanged", this.rerender.bind(this))
+		// EventsSDK.on("PlayerCustomDataUpdated", this.rerender.bind(this))
 	}
 	protected PanoramaWindowDestroy(name: string): void {
 		if (name === "DotaHud") {
@@ -77,9 +66,22 @@ new (class CMetaTracker {
 			this.isDestroyingHUD = false
 		}
 	}
-	protected OnFullHeroGlobalDataUpdated(arr: HeroDataResponse[]): void {
+	protected GlobalDataUpdated(arr: HeroDataResponse[]): void {
 		setDotaPlusData(arr)
 		this.applyWinRatesToHeroGrid()
+	}
+	private rerender(): void {
+		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
+		if (GameRules && !isDashboard && GameRules.IsInGame) {
+			return
+		}
+		Panorama.EnterMainThread().then(async () => {
+			if (isDashboard) {
+				this.applyInformation()
+			}
+			this.applyWinRatesToHeroGrid()
+			await Panorama.LeaveMainThread()
+		})
 	}
 	private applyWinRatesToHeroGrid(uiState: DOTAGameUIState = GameState.UIState): void {
 		const isDashboard = uiState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
@@ -108,7 +110,7 @@ new (class CMetaTracker {
 		const menu = this.menu
 		return {
 			getWinRate(heroID: number): number {
-				if (menu.isDota2Source()) {
+				if (menu.isDota2Source) {
 					return getWinRateForHero(heroID)
 				}
 				const rank = getCurrentWinRateRank()
@@ -117,7 +119,7 @@ new (class CMetaTracker {
 				return byHero?.get(heroID) ?? DEFAULT_WIN_RATE
 			},
 			getTier(heroID: number): string | undefined {
-				if (menu.isDota2Source()) {
+				if (menu.isDota2Source) {
 					return getDotaPlusTierForHero(heroID)
 				}
 				const rank = getCurrentWinRateRank()
@@ -125,7 +127,7 @@ new (class CMetaTracker {
 				return getHeroTier(heroID, rank, position)
 			},
 			getPickRate(heroID: number): number {
-				if (menu.isDota2Source()) {
+				if (menu.isDota2Source) {
 					return getPickRateForHero(heroID)
 				}
 				const rank = getCurrentWinRateRank()

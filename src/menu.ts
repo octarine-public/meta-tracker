@@ -21,11 +21,12 @@ export class MenuManager {
 		this.dotaPlusMenu = new DotaPlusMenu(this.tree)
 		this.statsType.OnValue(cb => this.statsTypeChanged(cb))
 	}
-
-	public isDota2Source(): boolean {
+	public get isDota2Source(): boolean {
 		return this.statsType.SelectedID === 0
 	}
-
+	public get StatsTypeIndex(): number {
+		return this.statsType.SelectedID
+	}
 	/** Set stats type from panorama (0 = Dota 2, 1 = Stratz) */
 	public setStatsTypeIndex(index: number): void {
 		if (this.statsType.SelectedID === index) {
@@ -34,11 +35,6 @@ export class MenuManager {
 		this.statsType.SelectedID = index
 		this.statsTypeChanged(this.statsType)
 	}
-
-	public getStatsTypeIndex(): number {
-		return this.statsType.SelectedID
-	}
-
 	private statsTypeChanged(call: Menu.Dropdown): void {
 		switch (call.SelectedID) {
 			case 0:

@@ -36,7 +36,7 @@ export function getSettingsRowsConfig(menu: MenuManager): SettingsRowConfig[] {
 			rowId: "OctarineStatsType",
 			labelKey: "Stats",
 			optionKeys: STATS_TYPE_OPTIONS,
-			getSelectedIndex: () => menu.getStatsTypeIndex(),
+			getSelectedIndex: () => menu.StatsTypeIndex,
 			onSelect: (idx: number) => menu.setStatsTypeIndex(idx)
 		},
 		{
