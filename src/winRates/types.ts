@@ -31,13 +31,19 @@ export const RANKS_DOTA_PLUS = [
 	"DIVINE + IMMORTAL"
 ]
 
-export const HeroPositions = [1, 2, 3, 4, 5] as const
+/** Positions that have data in JSON (heroesPos1..heroesPos5) */
+export const DataHeroPositions = [1, 2, 3, 4, 5] as const
+export type DataHeroPosition = (typeof DataHeroPositions)[number]
+
+/** 0 = ALL positions, 1–5 = specific position */
+export const HeroPositions = [0, 1, 2, 3, 4, 5] as const
 export type HeroPosition = (typeof HeroPositions)[number]
 
-export const RankOptions = ["ALL", ...RANKS] as const
+export const RankOptions = ["ALL", ...RANKS]
 export type WinRateRank = (typeof RankOptions)[number]
 
 export const PositionLabelList = [
+	"ALL",
 	"Carry",
 	"Mid",
 	"Offlane",

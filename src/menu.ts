@@ -6,6 +6,7 @@ import { StratzMenu } from "./stratz/index"
 
 export class MenuManager {
 	public readonly State: Menu.Toggle
+	public readonly TierListEnabled: Menu.Toggle
 
 	public readonly stratzMenu: StratzMenu
 	public readonly dotaPlusMenu: DotaPlusMenu
@@ -14,6 +15,7 @@ export class MenuManager {
 
 	constructor() {
 		this.State = this.tree.AddToggle("State", true)
+		this.TierListEnabled = this.tree.AddToggle("Tier list", true)
 		this.tree.SortNodes = false
 		this.statsType = this.tree.AddDropdown("Stats", ["Dota 2", "Stratz"])
 

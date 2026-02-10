@@ -108,6 +108,9 @@ new (class CMetaTracker {
 				return byHero?.get(heroID) ?? DEFAULT_WIN_RATE
 			},
 			getTier(heroID: number): string | undefined {
+				if (!menu.TierListEnabled.value) {
+					return undefined
+				}
 				if (menu.isDota2Source) {
 					return getDotaPlusTierForHero(heroID)
 				}
@@ -133,7 +136,7 @@ new (class CMetaTracker {
 		const menu = this.menu
 		return {
 			isVisible(): boolean {
-				return menu.State.value
+				return menu.State.value && menu.TierListEnabled.value
 			},
 			setInformationPanelVisible(visible: boolean): void {
 				menu.State.value = visible

@@ -126,6 +126,10 @@ export class HeroStatsOverlay {
 			winRateLabel.SetText(`${winRatePct.toFixed(0)}%`)
 		}
 		this.ensureTierPanel(container, tier)
+		const tierPanel = container.FindChildTraverse(TIER_PANEL_ID)
+		if (tierPanel?.BIsLoaded()) {
+			tierPanel.SetVisible(tier !== undefined && tier !== null)
+		}
 		if (bottomContainer?.BIsLoaded() && pickRatePct > 0) {
 			const pickRateLabel = this.ensurePickRatePanel(bottomContainer)
 			if (pickRateLabel?.BIsLoaded()) {

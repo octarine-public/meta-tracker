@@ -24,10 +24,6 @@ export class DotaPlusMenu {
 	public get RankIndex(): number {
 		return this.winRateRankDropdown.SelectedID
 	}
-	public MenuConfigChanged(callback: () => void): void {
-		this.winRateRankDropdown.OnValue(_ => callback())
-		callback()
-	}
 	private syncRankChunk(): void {
 		if (this.winRateRankDropdown.IsHidden) {
 			return

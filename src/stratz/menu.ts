@@ -27,11 +27,12 @@ export class StratzMenu {
 			1
 		)
 		// 0 = ALL, 1 = HERALD, ... 8 = IMMORTAL; default ALL
-		this.winRateRankDropdown = node.AddDropdown(this.rankName, [...RankOptions], 1)
+		this.winRateRankDropdown = node.AddDropdown(this.rankName, RankOptions)
+		// 0 = ALL, 1 = Carry, ... 5 = Hard support; default ALL
 		this.winRatePositionDropdown = node.AddDropdown(
 			this.positionName,
-			[...PositionLabelList],
-			1
+			PositionLabelList,
+			0
 		)
 		this.winRatePeriodDropdown.OnValue(() => this.syncStateFromMenu())
 		this.winRateRankDropdown.OnValue(() => this.syncStateFromMenu())
@@ -46,12 +47,6 @@ export class StratzMenu {
 	}
 	public get PositionIndex(): number {
 		return this.winRatePositionDropdown.SelectedID
-	}
-	public MenuConfigChanged(callback: () => void): void {
-		this.winRateRankDropdown.OnValue(_ => callback())
-		this.winRatePeriodDropdown.OnValue(_ => callback())
-		this.winRatePositionDropdown.OnValue(_ => callback())
-		callback()
 	}
 	public SetVisible(visible: boolean): void {
 		this.winRateRankDropdown.IsHidden = !visible

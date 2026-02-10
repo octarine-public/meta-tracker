@@ -1,7 +1,7 @@
 import { Utils } from "github.com/octarine-public/wrapper/index"
 
 import { WIN_RATES_DIR } from "../constants"
-import { HeroPosition, HeroPositions, RANKS, WinRatePeriod } from "./types"
+import { DataHeroPositions, HeroPosition, RANKS, WinRatePeriod } from "./types"
 
 export function winRatesPath(period: WinRatePeriod, rank: string): string {
 	return `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
@@ -53,6 +53,7 @@ export const matchCountsByRankAndPosition = new Map<
 
 export const winRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
 export const pickRatesByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
+export const matchCountsByRank = new Map<WinRatePeriod, Map<string, Map<number, number>>>()
 
 function loadStatsForRank(period: WinRatePeriod, rank: string): RankStats {
 	const winRates = new Map<number, number>()
@@ -93,7 +94,7 @@ function loadStatsForRank(period: WinRatePeriod, rank: string): RankStats {
 function loadStatsForRankAndPosition(
 	period: WinRatePeriod,
 	rank: string,
-	position: HeroPosition
+	position: DataHeroPosition
 ): RankStats {
 	const winRates = new Map<number, number>()
 	const pickRates = new Map<number, number>()
@@ -126,7 +127,7 @@ function loadStatsForRankAndPosition(
 
 function loadStatsForAllRanksAndPosition(
 	period: WinRatePeriod,
-	position: HeroPosition
+	position: DataHeroPosition
 ): RankStats {
 	const aggregated = new Map<number, { wins: number; matches: number }>()
 	let totalMatches = 0
@@ -169,19 +170,21 @@ export function loadAllStatsByRank(): void {
 	for (const period of periods) {
 		const rankToWinRates = new Map<string, Map<number, number>>()
 		const rankToPickRates = new Map<string, Map<number, number>>()
+		const rankToMatchByRank = new Map<string, Map<number, number>>()
 		const rankToWinByPos = new Map<string, Map<HeroPosition, Map<number, number>>>()
 		const rankToPickByPos = new Map<string, Map<HeroPosition, Map<number, number>>>()
 		const rankToMatchByPos = new Map<string, Map<HeroPosition, Map<number, number>>>()
 
 		for (const rank of RANKS) {
-			const { winRates, pickRates } = loadStatsForRank(period, rank)
+			const { winRates, pickRates, matchCounts } = loadStatsForRank(period, rank)
 			rankToWinRates.set(rank, winRates)
 			rankToPickRates.set(rank, pickRates)
+			rankToMatchByRank.set(rank, matchCounts)
 
 			const winByPos = new Map<HeroPosition, Map<number, number>>()
 			const pickByPos = new Map<HeroPosition, Map<number, number>>()
 			const matchByPos = new Map<HeroPosition, Map<number, number>>()
-			for (const pos of HeroPositions) {
+			for (const pos of DataHeroPositions) {
 				const {
 					winRates: wr,
 					pickRates: pr,
@@ -200,7 +203,7 @@ export function loadAllStatsByRank(): void {
 		const allWinByPos = new Map<HeroPosition, Map<number, number>>()
 		const allPickByPos = new Map<HeroPosition, Map<number, number>>()
 		const allMatchByPos = new Map<HeroPosition, Map<number, number>>()
-		for (const pos of HeroPositions) {
+		for (const pos of DataHeroPositions) {
 			const {
 				winRates: wr,
 				pickRates: pr,
@@ -216,6 +219,7 @@ export function loadAllStatsByRank(): void {
 
 		winRatesByRank.set(period, rankToWinRates)
 		pickRatesByRank.set(period, rankToPickRates)
+		matchCountsByRank.set(period, rankToMatchByRank)
 		winRatesByRankAndPosition.set(period, rankToWinByPos)
 		pickRatesByRankAndPosition.set(period, rankToPickByPos)
 		matchCountsByRankAndPosition.set(period, rankToMatchByPos)

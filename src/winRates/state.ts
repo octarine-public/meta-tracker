@@ -2,7 +2,7 @@ import { HeroPosition, WinRatePeriod, WinRateRank } from "./types"
 
 /** Current selection (used by menu + panorama) */
 let currentRank: WinRateRank = "ALL"
-let currentPosition: HeroPosition = 1
+let currentPosition: HeroPosition = 0
 let currentPeriod: WinRatePeriod = "day"
 
 export function getCurrentWinRateRank(): WinRateRank {
