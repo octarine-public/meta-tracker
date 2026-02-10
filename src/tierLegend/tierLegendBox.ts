@@ -2,6 +2,7 @@ import { Menu } from "github.com/octarine-public/wrapper/index"
 
 import {
 	getTierBackgroundColor,
+	PICK_RATE_COLOR,
 	TIER_LEGEND_BADGE_SIZE,
 	TIER_LEGEND_BOX_ID,
 	TIER_LEGEND_DESC_FONT_SIZE,
@@ -21,7 +22,8 @@ type TierLegendKey =
 	| "Tier C"
 	| "Tier D"
 	| "Tier ?"
-	| "Pick rate legend"
+	| "Pick rate legend term"
+	| "Pick rate legend desc"
 
 function getTierLegendText(key: TierLegendKey): string {
 	return Menu.Localization.Localize(key)
@@ -79,21 +81,48 @@ export function buildTierLegendBox(legendRoot: IUIPanel): void {
 			])
 		}
 	}
-	const pickRateHintLabel = Panorama.CreatePanel<CLabel>(
-		"Label",
-		"OctarineTierLegendPickRateHint",
+	const pickRateHintRow = Panorama.CreatePanel(
+		"Panel",
+		"OctarineTierLegendPickRateHintRow",
 		legendBox
 	)
-	if (pickRateHintLabel?.BIsLoaded()) {
-		setPanelStyle(pickRateHintLabel, [
+	if (pickRateHintRow?.BIsLoaded()) {
+		setPanelStyle(pickRateHintRow, [
 			"width: 100%",
 			"height: fit-children",
-			"font-size: 12px",
-			"color: #94a3b8",
-			"text-align: left",
-			"margin-bottom: 10px",
-			"text-overflow: shrink"
+			"flow-children: right",
+			"margin-bottom: 10px"
 		])
+		const pickRateTermLabel = Panorama.CreatePanel<CLabel>(
+			"Label",
+			"OctarineTierLegendPickRateTerm",
+			pickRateHintRow
+		)
+		if (pickRateTermLabel?.BIsLoaded()) {
+			setPanelStyle(pickRateTermLabel, [
+				"width: fit-children",
+				"height: fit-children",
+				"font-size: 12px",
+				`color: ${PICK_RATE_COLOR}`,
+				"text-align: left",
+				"text-overflow: shrink"
+			])
+		}
+		const pickRateDescLabel = Panorama.CreatePanel<CLabel>(
+			"Label",
+			"OctarineTierLegendPickRateDesc",
+			pickRateHintRow
+		)
+		if (pickRateDescLabel?.BIsLoaded()) {
+			setPanelStyle(pickRateDescLabel, [
+				"width: fill",
+				"height: fit-children",
+				"font-size: 12px",
+				"color: #94a3b8",
+				"text-align: left",
+				"text-overflow: shrink"
+			])
+		}
 	}
 	for (let i = 0; i < TIER_ORDER.length; i++) {
 		const tier = TIER_ORDER[i]
@@ -169,11 +198,17 @@ export function updateTierLegendLabels(legendRoot: IUIPanel): void {
 	if (titleLabel?.BIsLoaded()) {
 		titleLabel.SetText(getTierLegendText("Tier legend"))
 	}
-	const pickRateHint = legendRoot.FindChildTraverse<CLabel>(
-		"OctarineTierLegendPickRateHint"
+	const pickRateTerm = legendRoot.FindChildTraverse<CLabel>(
+		"OctarineTierLegendPickRateTerm"
 	)
-	if (pickRateHint?.BIsLoaded()) {
-		pickRateHint.SetText(getTierLegendText("Pick rate legend"))
+	if (pickRateTerm?.BIsLoaded()) {
+		pickRateTerm.SetText(getTierLegendText("Pick rate legend term"))
+	}
+	const pickRateDesc = legendRoot.FindChildTraverse<CLabel>(
+		"OctarineTierLegendPickRateDesc"
+	)
+	if (pickRateDesc?.BIsLoaded()) {
+		pickRateDesc.SetText(getTierLegendText("Pick rate legend desc"))
 	}
 	const tierKey = (tier: string): TierLegendKey => `Tier ${tier}` as TierLegendKey
 	for (const tier of TIER_ORDER) {
