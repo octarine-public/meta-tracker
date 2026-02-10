@@ -46,7 +46,7 @@ new (class CMetaTracker {
 			new DashboardSettingsPanel(this.menu)
 		)
 
-		EventsSDK.on("PostDataUpdate", this.OnPostDataUpdate.bind(this))
+		EventsSDK.on("Draw", this.Draw.bind(this))
 		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
 		Events.on(
@@ -54,15 +54,18 @@ new (class CMetaTracker {
 			this.OnFullHeroGlobalDataUpdated.bind(this)
 		)
 	}
-	protected OnPostDataUpdate(): void {
+	protected Draw(): void {
 		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
 		if (GameRules && !isDashboard && GameRules.IsInGame) {
 			return
 		}
-		if (isDashboard) {
-			this.applyInformation()
-		}
-		this.applyWinRatesToHeroGrid()
+		Panorama.EnterMainThread().then(async () => {
+			if (isDashboard) {
+				this.applyInformation()
+			}
+			this.applyWinRatesToHeroGrid()
+			await Panorama.LeaveMainThread()
+		})
 	}
 	protected PanoramaWindowDestroy(name: string): void {
 		if (name === "DotaHud") {
