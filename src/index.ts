@@ -1,13 +1,5 @@
 import "./translations"
 
-import {
-	DOTAGameUIState,
-	Events,
-	EventsSDK,
-	GameRules,
-	GameState
-} from "github.com/octarine-public/wrapper/index"
-
 import { DEFAULT_WIN_RATE } from "./constants"
 import { DashboardSettingsPanel } from "./dashboardSettings/index"
 import {
@@ -41,10 +33,10 @@ new (class CMetaTracker {
 	)
 
 	constructor() {
-		Events.on("PanoramaFrame", this.PanoramaFrame.bind(this))
-		Events.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
-		Events.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
-		Events.on("DOTAFullHeroGlobalDataUpdated", this.GlobalDataUpdated.bind(this))
+		EventsSDK.on("PanoramaFrame", this.PanoramaFrame.bind(this))
+		EventsSDK.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
+		EventsSDK.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
+		Source2SDK.NativeEvents.on("DOTAFullHeroGlobalDataUpdated", this.GlobalDataUpdated.bind(this))
 
 		EventsSDK.on("GameEnded", this.rerenderPanorama.bind(this))
 		EventsSDK.on("GameStarted", this.rerenderPanorama.bind(this))
@@ -65,8 +57,9 @@ new (class CMetaTracker {
 			this.isDestroyingHUD = false
 		}
 	}
-	protected GlobalDataUpdated(arr: HeroDataResponse[]): void {
-		setDotaPlusData(arr)
+	// the native event hands over whatever the game sent, untyped
+	protected GlobalDataUpdated(obj: unknown): void {
+		setDotaPlusData(obj as HeroDataResponse[])
 		this.rerenderPanorama()
 	}
 	protected PanoramaFrame(): void {
@@ -148,7 +141,7 @@ new (class CMetaTracker {
 	}
 	private rerenderPanorama(): void {
 		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
-		if (GameRules !== undefined && !isDashboard && GameRules.IsInGame) {
+		if (Dota2SDK.GameRules !== undefined && !isDashboard && Dota2SDK.GameRules.IsInGame) {
 			return
 		}
 		Panorama.EnterMainThread()

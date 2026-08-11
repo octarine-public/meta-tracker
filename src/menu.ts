@@ -1,4 +1,3 @@
-import { Menu } from "github.com/octarine-public/wrapper/index"
 
 import { CHART_ICON } from "./constants"
 import { DotaPlusMenu } from "./dotaPlus/index"
@@ -48,6 +47,6 @@ export class MenuManager {
 				this.dotaPlusMenu.SetVisible(false)
 				break
 		}
-		this.tree.Update(true)
+		this.tree.Update()
 	}
 }

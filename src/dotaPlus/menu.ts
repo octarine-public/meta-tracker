@@ -1,4 +1,3 @@
-import { Menu } from "github.com/octarine-public/wrapper/index"
 
 import { RANKS_DOTA_PLUS } from "../winRates/index"
 import { setCurrentDotaPlusRankChunk } from "./data"

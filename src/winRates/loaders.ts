@@ -1,7 +1,12 @@
-import { Utils } from "github.com/octarine-public/wrapper/index"
 
 import { WIN_RATES_DIR } from "../constants"
-import { DataHeroPositions, HeroPosition, RANKS, WinRatePeriod } from "./types"
+import {
+	DataHeroPosition,
+	DataHeroPositions,
+	HeroPosition,
+	RANKS,
+	WinRatePeriod
+} from "./types"
 
 export function winRatesPath(period: WinRatePeriod, rank: string): string {
 	return `${WIN_RATES_DIR}/${period}/heroes_meta_positions_${rank}.json`
@@ -60,7 +65,7 @@ function loadStatsForRank(period: WinRatePeriod, rank: string): RankStats {
 	const pickRates = new Map<number, number>()
 	const matchCounts = new Map<number, number>()
 	try {
-		const data: WinRatesData = Utils.readJSON(winRatesPath(period, rank))
+		const data: WinRatesData = SharedSDK.readJSON(winRatesPath(period, rank))
 		const aggregated = new Map<number, { wins: number; matches: number }>()
 		let totalMatches = 0
 		for (const key of Object.keys(data)) {
@@ -100,7 +105,7 @@ function loadStatsForRankAndPosition(
 	const pickRates = new Map<number, number>()
 	const matchCounts = new Map<number, number>()
 	try {
-		const data: WinRatesData = Utils.readJSON(winRatesPath(period, rank))
+		const data: WinRatesData = SharedSDK.readJSON(winRatesPath(period, rank))
 		const key = `heroesPos${position}`
 		const entries = getWinEntries(data, key, period)
 		if (!entries) {
@@ -133,7 +138,7 @@ function loadStatsForAllRanksAndPosition(
 	let totalMatches = 0
 	for (const rank of RANKS) {
 		try {
-			const data: WinRatesData = Utils.readJSON(winRatesPath(period, rank))
+			const data: WinRatesData = SharedSDK.readJSON(winRatesPath(period, rank))
 			const key = `heroesPos${position}`
 			const entries = getWinEntries(data, key, period)
 			if (!entries) {

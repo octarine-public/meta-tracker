@@ -27,7 +27,7 @@ function aggregateWinRatesAllPositions(rank: WinRateRank): Nullable<Map<number, 
 	const matchByPos = matchCountsByRankAndPosition.get(period)?.get(rank)
 	const winByPos = winRatesByRankAndPosition.get(period)?.get(rank)
 	if (!matchByPos || !winByPos) {
-		return null
+		return undefined
 	}
 	const totalWins = new Map<number, number>()
 	const totalMatches = new Map<number, number>()
@@ -61,12 +61,12 @@ function aggregateWinRatesAllPositions(rank: WinRateRank): Nullable<Map<number, 
 /** Aggregate pick rates and match counts across all positions for rank "ALL" */
 function aggregatePickAndMatchAllPositions(
 	rank: WinRateRank
-): { pickRates: Map<number, number>; matchCounts: Map<number, number> } | null {
+): Nullable<{ pickRates: Map<number, number>; matchCounts: Map<number, number> }> {
 	const period = getCurrentWinRatePeriod()
 	const matchByPos = matchCountsByRankAndPosition.get(period)?.get(rank)
 	const pickByPos = pickRatesByRankAndPosition.get(period)?.get(rank)
 	if (!matchByPos || !pickByPos) {
-		return null
+		return undefined
 	}
 	const totalMatches = new Map<number, number>()
 	let periodTotal = 0
@@ -112,7 +112,7 @@ export function getPickRatesByRankAndPosition(
 	if (position === 0) {
 		if (rank === "ALL") {
 			const agg = aggregatePickAndMatchAllPositions(rank)
-			return agg?.pickRates ?? null
+			return agg?.pickRates ?? undefined
 		}
 		return getPickRatesByRank(rank)
 	}
@@ -129,7 +129,7 @@ export function getMatchCountsByRankAndPosition(
 	if (position === 0) {
 		if (rank === "ALL") {
 			const agg = aggregatePickAndMatchAllPositions(rank)
-			return agg?.matchCounts ?? null
+			return agg?.matchCounts ?? undefined
 		}
 		return getMatchCountsByRank(rank)
 	}
