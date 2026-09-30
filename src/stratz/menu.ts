@@ -1,4 +1,4 @@
-
+import { MetaIcons } from "../icons"
 import {
 	HeroPositions,
 	PeriodOptions,
@@ -33,6 +33,9 @@ export class StratzMenu {
 			PositionLabelList,
 			0
 		)
+		this.winRatePeriodDropdown.IconPath = MetaIcons.Period
+		this.winRateRankDropdown.IconPath = MetaIcons.Rank
+		this.winRatePositionDropdown.IconPath = MetaIcons.Position
 		this.winRatePeriodDropdown.OnValue(() => this.syncStateFromMenu())
 		this.winRateRankDropdown.OnValue(() => this.syncStateFromMenu())
 		this.winRatePositionDropdown.OnValue(() => this.syncStateFromMenu())

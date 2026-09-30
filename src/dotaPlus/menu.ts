@@ -1,4 +1,4 @@
-
+import { MetaIcons } from "../icons"
 import { RANKS_DOTA_PLUS } from "../winRates/index"
 import { setCurrentDotaPlusRankChunk } from "./data"
 
@@ -7,6 +7,7 @@ export class DotaPlusMenu {
 	private readonly rankName = "Rank"
 	constructor(node: Menu.Node) {
 		this.winRateRankDropdown = node.AddDropdown(this.rankName, RANKS_DOTA_PLUS, 1)
+		this.winRateRankDropdown.IconPath = MetaIcons.Rank
 		this.winRateRankDropdown.OnValue(() => this.syncRankChunk())
 		this.syncRankChunk()
 	}

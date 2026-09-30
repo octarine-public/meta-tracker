@@ -77,10 +77,6 @@ export const WIN_RATES_DIR = "win-rates"
 // Minimum matches required to show a tier (avoids noise from tiny samples)
 export const MIN_MATCHES_FOR_TIER = 100
 
-// Menu
-export const META_TRACKER_MENU_PATH = "github.com/octarine-public/meta-tracker/"
-export const CHART_ICON = `${META_TRACKER_MENU_PATH}scripts_files/chart.svg`
-
 export const STYLE_SYMBOL = Panorama.MakeSymbol("style")
 export const HERO_ID_ATTR = Panorama.MakeSymbol("heroid")
 export const HERO_CARD_OVERLAYS_CLASS = Panorama.MakeSymbol("HeroCardOverlays")

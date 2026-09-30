@@ -1,6 +1,5 @@
-
-import { CHART_ICON } from "./constants"
 import { DotaPlusMenu } from "./dotaPlus/index"
+import { MetaIcons } from "./icons"
 import { StratzMenu } from "./stratz/index"
 
 export class MenuManager {
@@ -10,13 +9,23 @@ export class MenuManager {
 	public readonly stratzMenu: StratzMenu
 	public readonly dotaPlusMenu: DotaPlusMenu
 	private readonly statsType: Menu.Dropdown
-	private readonly tree = Menu.AddEntryDeep(["Visual", "Meta tracker"], [CHART_ICON])
+	private readonly tree = Menu.AddEntryDeep(
+		["Visual", "Meta tracker"],
+		["", MetaIcons.Page]
+	)
 
 	constructor() {
+		// the script's own switch rides the top bar beside the breadcrumb and gates the page
 		this.State = this.tree.AddToggle("State", true)
+		this.State.IconPath = MetaIcons.State
+		this.tree.HeaderControl = this.State
+		this.tree.Gate = this.State
+
 		this.TierListEnabled = this.tree.AddToggle("Tier list", true)
+		this.TierListEnabled.IconPath = MetaIcons.TierList
 		this.tree.SortNodes = false
 		this.statsType = this.tree.AddDropdown("Stats", ["Dota 2", "Stratz"])
+		this.statsType.IconPath = MetaIcons.Stats
 
 		this.stratzMenu = new StratzMenu(this.tree)
 		this.dotaPlusMenu = new DotaPlusMenu(this.tree)
