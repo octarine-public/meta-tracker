@@ -9,10 +9,14 @@ export class MenuManager {
 	public readonly stratzMenu: StratzMenu
 	public readonly dotaPlusMenu: DotaPlusMenu
 	private readonly statsType: Menu.Dropdown
-	private readonly tree = Menu.AddEntryDeep(
-		["Visual", "Meta tracker"],
-		["", MetaIcons.Page]
-	)
+	/**
+	 * A page in the side column of the Overwolf section, shared with the Overwolf script: the last
+	 * of its pages (priority 3), after the Overwolf panel, MMR Tracker and Total in search.
+	 */
+	private readonly tree = Menu.AddEntry(
+		"Overwolf",
+		PathData.WrapperMenuPath + "/icons/info.svg"
+	).AddNode("Meta tracker", MetaIcons.Page, "", -1, 3)
 
 	constructor() {
 		// the script's own switch rides the top bar beside the breadcrumb and gates the page
