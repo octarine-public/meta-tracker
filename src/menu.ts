@@ -10,15 +10,19 @@ export class MenuManager {
 	public readonly dotaPlusMenu: DotaPlusMenu
 	private readonly statsType: Menu.Dropdown
 	/**
-	 * A page in the side column of the Overwolf section, shared with the Overwolf script: the last
+	 * A page in the side column of the Insights section, shared with the Overwolf script: the last
 	 * of its pages (priority 3), after the Overwolf panel, MMR Tracker and Total in search.
 	 */
 	private readonly tree = Menu.AddEntry(
-		"Overwolf",
+		"Insights",
 		PathData.WrapperMenuPath + "/icons/info.svg"
 	).AddNode("Meta tracker", MetaIcons.Page, "", -1, 3)
 
 	constructor() {
+		// the page was filed under Visual: a config saved there still lands on it
+		MenuSDK.AddConfigMigration(raw =>
+			MenuSDK.MigrateNodeTab(raw, "Visual", "Insights", "Meta tracker")
+		)
 		// the script's own switch rides the top bar beside the breadcrumb and gates the page
 		this.State = this.tree.AddToggle("State", true)
 		this.State.IconPath = MetaIcons.State
