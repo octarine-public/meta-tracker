@@ -4,14 +4,14 @@ import {
 	TIER_LEGEND_BOX_ID,
 	TIER_LEGEND_PANEL_ID
 } from "../constants"
-import type { DashboardSettingsPanel } from "../dashboardSettings"
+import { DashboardSettingsPanel } from "../dashboardSettings"
 import { setPanelStyle } from "../panorama/utils"
 import {
 	buildTierLegendBox,
 	setTierLegendRootStyle,
 	updateTierLegendLabels
 } from "./tierLegendBox"
-import type { TierLegendPanelVisibility } from "./types"
+import { TierLegendPanelVisibility } from "./types"
 
 export class TierLegendPanel {
 	constructor(
@@ -19,11 +19,11 @@ export class TierLegendPanel {
 		private readonly settingsPanel: DashboardSettingsPanel
 	) {}
 
-	public ensurePanel(heroesPage: IUIPanel): void {
+	public ensurePanel(heroesPage: Panel): void {
 		const state = this.visibility.isVisible()
-		let legendRoot = heroesPage.FindChildTraverse(TIER_LEGEND_PANEL_ID)
-		if (legendRoot?.BIsLoaded()) {
-			if (legendRoot.GetFirstChild() === null) {
+		let legendRoot = heroesPage.FindChild(TIER_LEGEND_PANEL_ID)
+		if (legendRoot !== undefined) {
+			if (legendRoot.ChildCount === 0) {
 				this.fillPanel(legendRoot)
 			} else {
 				this.settingsPanel.reregisterHandlers(legendRoot)
@@ -34,8 +34,8 @@ export class TierLegendPanel {
 			legendRoot.SetVisible(state)
 			return
 		}
-		legendRoot = Panorama.CreatePanel("Panel", TIER_LEGEND_PANEL_ID, heroesPage)
-		if (!legendRoot?.BIsLoaded()) {
+		legendRoot = heroesPage.CreateChild("Panel", TIER_LEGEND_PANEL_ID)
+		if (legendRoot === undefined) {
 			return
 		}
 		setTierLegendRootStyle(legendRoot)
@@ -46,13 +46,12 @@ export class TierLegendPanel {
 		legendRoot.SetVisible(state)
 	}
 
-	private applyVisibility(legendRoot: IUIPanel): void {
-		const legendBox = legendRoot.FindChildTraverse(TIER_LEGEND_BOX_ID)
-		if (legendBox?.BIsLoaded()) {
-			legendBox.SetVisible(this.visibility.isTierLegendVisible())
-		}
-		const settingsPanelEl = legendRoot.FindChildTraverse(SETTINGS_PANEL_ID)
-		if (settingsPanelEl?.BIsLoaded()) {
+	private applyVisibility(legendRoot: Panel): void {
+		legendRoot
+			.FindChild(TIER_LEGEND_BOX_ID)
+			?.SetVisible(this.visibility.isTierLegendVisible())
+		const settingsPanelEl = legendRoot.FindChild(SETTINGS_PANEL_ID)
+		if (settingsPanelEl !== undefined) {
 			const marginTop = this.visibility.isTierLegendVisible() ? "10px" : "0px"
 			setPanelStyle(settingsPanelEl, [
 				`width: ${SETTINGS_PANEL_WIDTH}`,
@@ -65,14 +64,10 @@ export class TierLegendPanel {
 		}
 	}
 
-	private fillPanel(legendRoot: IUIPanel): void {
+	private fillPanel(legendRoot: Panel): void {
 		buildTierLegendBox(legendRoot)
-		const settingsPanelEl = Panorama.CreatePanel(
-			"Panel",
-			SETTINGS_PANEL_ID,
-			legendRoot
-		)
-		if (settingsPanelEl?.BIsLoaded()) {
+		const settingsPanelEl = legendRoot.CreateChild("Panel", SETTINGS_PANEL_ID)
+		if (settingsPanelEl !== undefined) {
 			setPanelStyle(settingsPanelEl, [
 				`width: ${SETTINGS_PANEL_WIDTH}`,
 				"height: fit-children",
@@ -85,7 +80,7 @@ export class TierLegendPanel {
 		}
 	}
 
-	private updateLabels(legendRoot: IUIPanel): void {
+	private updateLabels(legendRoot: Panel): void {
 		updateTierLegendLabels(legendRoot)
 	}
 }

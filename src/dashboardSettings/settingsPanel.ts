@@ -8,8 +8,7 @@ import {
 	SETTINGS_LIST_ITEM_HEIGHT,
 	SETTINGS_PANEL_ID,
 	SETTINGS_ROW_HEIGHT,
-	SETTINGS_VALUE_FONT_SIZE,
-	TIER_LEGEND_PANEL_ID
+	SETTINGS_VALUE_FONT_SIZE
 } from "../constants"
 import { MenuManager } from "../menu"
 import { setPanelStyle } from "../panorama/utils"
@@ -34,8 +33,8 @@ interface SettingsRowAction {
 	onSelect: (index: number) => void
 	getSelectedIndex: () => number
 	optionKeys: readonly string[]
-	legendRoot: IUIPanel
-	listPanel?: IUIPanel
+	legendRoot: Panel
+	listPanel?: Panel
 }
 
 export class DashboardSettingsPanel {
@@ -51,17 +50,13 @@ export class DashboardSettingsPanel {
 	}
 
 	/** Single handler for all settings panels (event delegation) */
-	public onSettingsActivated(panel: IUIPanel): void {
-		if (!panel?.BIsLoaded() || !panel.FindAncestor(TIER_LEGEND_PANEL_ID)) {
-			return
-		}
-		const id = panel.GetID()
+	public onSettingsActivated(id: string): void {
 		if (id.includes("ListOpt_")) {
 			const idx = id.indexOf("ListOpt_")
 			const rowId = id.slice(0, idx)
 			const optIndex = parseInt(id.slice(idx + "ListOpt_".length), 10)
 			const action = this.settingsActions.get(rowId)
-			if (action?.type === "list" && action.listPanel?.BIsLoaded()) {
+			if (action?.type === "list" && action.listPanel?.IsValid === true) {
 				action.onSelect(optIndex)
 				action.listPanel.SetVisible(false)
 				this.openListRowIds.delete(rowId)
@@ -79,10 +74,12 @@ export class DashboardSettingsPanel {
 				const next = (action.getSelectedIndex() + 1) % action.optionKeys.length
 				action.onSelect(next)
 				this.updateFromMenu(action.legendRoot)
-			} else if (action.listPanel?.BIsLoaded()) {
+			} else if (action.listPanel?.IsValid === true) {
 				const isOpen = this.openListRowIds.has(rowId)
 				for (const rid of this.openListRowIds) {
-					action.legendRoot.FindChildTraverse(`${rid}List`)?.SetVisible(false)
+					this.rowOf(action.legendRoot, rid)
+						?.FindChild(`${rid}List`)
+						?.SetVisible(false)
 				}
 				this.openListRowIds.clear()
 				if (!isOpen) {
@@ -93,13 +90,12 @@ export class DashboardSettingsPanel {
 		}
 	}
 
-	public appendTo(legendRoot: IUIPanel, settingsPanel: IUIPanel): void {
-		const container = Panorama.CreatePanel(
-			"Panel",
-			SETTINGS_CONTAINER_ID,
-			settingsPanel
-		)
-		if (!container?.BIsLoaded()) {
+	public appendTo(legendRoot: Panel, settingsPanel: Panel): void {
+		this.handlers.clear()
+		this.settingsActions.clear()
+		this.openListRowIds.clear()
+		const container = settingsPanel.CreateChild("Panel", SETTINGS_CONTAINER_ID)
+		if (container === undefined) {
 			return
 		}
 		setPanelStyle(container, [
@@ -121,28 +117,24 @@ export class DashboardSettingsPanel {
 		}
 	}
 
-	public reregisterHandlers(legendRoot: IUIPanel): void {
-		const settingsPanel = legendRoot.FindChildTraverse(SETTINGS_PANEL_ID)
-		if (!settingsPanel?.BIsLoaded()) {
-			return
-		}
-		const container = settingsPanel.FindChildTraverse(SETTINGS_CONTAINER_ID)
-		if (!container?.BIsLoaded()) {
+	public reregisterHandlers(legendRoot: Panel): void {
+		const container = legendRoot
+			.FindChild(SETTINGS_PANEL_ID)
+			?.FindChild(SETTINGS_CONTAINER_ID)
+		if (container === undefined) {
 			return
 		}
 		for (const config of this.getConfig()) {
-			const row = container.FindChildTraverse(config.rowId)
-			if (!row?.BIsLoaded()) {
-				continue
-			}
-			const topRow = row.FindChildTraverse(`${config.rowId}TopRow`)
-			const valuePanel = topRow?.FindChildTraverse(`${config.rowId}Value`)
-			if (!valuePanel?.BIsLoaded()) {
+			const row = container.FindChild(config.rowId)
+			const valuePanel = row
+				?.FindChild(`${config.rowId}TopRow`)
+				?.FindChild(`${config.rowId}Value`)
+			if (row === undefined || valuePanel === undefined) {
 				continue
 			}
 			const useList = config.optionKeys.length > this.DROPDOWN_LIST_THRESHOLD
-			const listPanel = row.FindChildTraverse(`${config.rowId}List`)
-			if (useList && listPanel?.BIsLoaded()) {
+			const listPanel = row.FindChild(`${config.rowId}List`)
+			if (useList && listPanel !== undefined) {
 				this.settingsActions.set(config.rowId, {
 					type: "list",
 					onSelect: config.onSelect,
@@ -151,21 +143,12 @@ export class DashboardSettingsPanel {
 					legendRoot,
 					listPanel
 				})
-				this.registerValueHandler(valuePanel, config.rowId)
+				this.registerHandler(valuePanel, `${config.rowId}Value`)
 				for (let i = 0; i < config.optionKeys.length; i++) {
-					const optPanel = listPanel.FindChildTraverse(
-						`${config.rowId}ListOpt_${i}`
-					)
-					if (
-						optPanel?.BIsLoaded() &&
-						!this.handlers.has(`${config.rowId}ListOpt_${i}`)
-					) {
-						const h = Panorama.RegisterEventHandler(
-							"Activated",
-							optPanel,
-							() => this.onSettingsActivated(optPanel)
-						)
-						this.handlers.set(`${config.rowId}ListOpt_${i}`, h)
+					const optId = `${config.rowId}ListOpt_${i}`
+					const optPanel = listPanel.FindChild(optId)
+					if (optPanel !== undefined) {
+						this.registerHandler(optPanel, optId)
 					}
 				}
 			} else {
@@ -176,12 +159,12 @@ export class DashboardSettingsPanel {
 					optionKeys: config.optionKeys,
 					legendRoot
 				})
-				this.registerValueHandler(valuePanel, config.rowId)
+				this.registerHandler(valuePanel, `${config.rowId}Value`)
 			}
 		}
 	}
 
-	public updateFromMenu(legendRoot: IUIPanel): void {
+	public updateFromMenu(legendRoot: Panel): void {
 		this.updateRowLabels(legendRoot)
 		const isDota2 = this.menu.isDota2Source
 		this.updateRowSelection(
@@ -190,78 +173,81 @@ export class DashboardSettingsPanel {
 			[...STATS_TYPE_OPTIONS],
 			this.menu.StatsTypeIndex
 		)
-		const periodRow = legendRoot.FindChildTraverse("OctarinePeriod")
-		if (periodRow?.BIsLoaded()) {
-			periodRow.SetVisible(!isDota2)
-			if (!isDota2) {
-				this.updateRowSelection(
-					legendRoot,
-					"OctarinePeriod",
-					[...PeriodOptions],
-					this.menu.stratzMenu.PeriodIndex
-				)
-			}
+		this.updateOptionalRow(
+			legendRoot,
+			"OctarinePeriod",
+			!isDota2,
+			[...PeriodOptions],
+			this.menu.stratzMenu.PeriodIndex
+		)
+		this.updateOptionalRow(
+			legendRoot,
+			"OctarineRankStratz",
+			!isDota2,
+			[...RankOptions],
+			this.menu.stratzMenu.RankIndex
+		)
+		this.updateOptionalRow(
+			legendRoot,
+			"OctarineRankDota2",
+			isDota2,
+			[...RANKS_DOTA_PLUS],
+			this.menu.dotaPlusMenu.RankIndex
+		)
+		this.updateOptionalRow(
+			legendRoot,
+			"OctarinePosition",
+			!isDota2,
+			[...PositionLabelList],
+			this.menu.stratzMenu.PositionIndex
+		)
+	}
+
+	private rowOf(legendRoot: Panel, rowId: string): Nullable<Panel> {
+		return legendRoot
+			.FindChild(SETTINGS_PANEL_ID)
+			?.FindChild(SETTINGS_CONTAINER_ID)
+			?.FindChild(rowId)
+	}
+
+	private updateOptionalRow(
+		legendRoot: Panel,
+		rowId: string,
+		shown: boolean,
+		optionKeys: readonly string[],
+		selectedIndex: number
+	): void {
+		const row = this.rowOf(legendRoot, rowId)
+		if (row === undefined) {
+			return
 		}
-		const rankStratzRow = legendRoot.FindChildTraverse("OctarineRankStratz")
-		if (rankStratzRow?.BIsLoaded()) {
-			rankStratzRow.SetVisible(!isDota2)
-			if (!isDota2) {
-				this.updateRowSelection(
-					legendRoot,
-					"OctarineRankStratz",
-					[...RankOptions],
-					this.menu.stratzMenu.RankIndex
-				)
-			}
-		}
-		const rankDota2Row = legendRoot.FindChildTraverse("OctarineRankDota2")
-		if (rankDota2Row?.BIsLoaded()) {
-			rankDota2Row.SetVisible(isDota2)
-			if (isDota2) {
-				this.updateRowSelection(
-					legendRoot,
-					"OctarineRankDota2",
-					[...RANKS_DOTA_PLUS],
-					this.menu.dotaPlusMenu.RankIndex
-				)
-			}
-		}
-		const positionRow = legendRoot.FindChildTraverse("OctarinePosition")
-		if (positionRow?.BIsLoaded()) {
-			positionRow.SetVisible(!isDota2)
-			if (!isDota2) {
-				this.updateRowSelection(
-					legendRoot,
-					"OctarinePosition",
-					[...PositionLabelList],
-					this.menu.stratzMenu.PositionIndex
-				)
-			}
+		row.SetVisible(shown)
+		if (shown) {
+			this.updateRowSelection(legendRoot, rowId, optionKeys, selectedIndex)
 		}
 	}
 
-	private registerValueHandler(valuePanel: IUIPanel, rowId: string): void {
-		if (this.handlers.has(`${rowId}Value`)) {
+	private registerHandler(panel: Panel, id: string): void {
+		if (this.handlers.has(id)) {
 			return
 		}
-		const h = Panorama.RegisterEventHandler("Activated", valuePanel, () =>
-			this.onSettingsActivated(valuePanel)
-		)
-		this.handlers.set(`${rowId}Value`, h)
+		const handle = panel.OnEvent("Activated", () => this.onSettingsActivated(id))
+		if (handle !== undefined) {
+			this.handlers.set(id, handle)
+		}
 	}
 
 	private createSettingsRow(
-		legendRoot: IUIPanel,
-		container: IUIPanel,
+		legendRoot: Panel,
+		container: Panel,
 		rowId: string,
 		labelKey: SettingsRowKey,
 		optionKeys: readonly string[],
 		getSelectedIndex: () => number,
 		onSelect: (index: number) => void
 	): void {
-		const useList = optionKeys.length > this.DROPDOWN_LIST_THRESHOLD
-		const row = Panorama.CreatePanel("Panel", rowId, container)
-		if (!row?.BIsLoaded()) {
+		const row = container.CreateChild("Panel", rowId)
+		if (row === undefined) {
 			return
 		}
 		setPanelStyle(row, [
@@ -270,8 +256,8 @@ export class DashboardSettingsPanel {
 			"flow-children: down",
 			"margin-bottom: 6px"
 		])
-		const topRow = Panorama.CreatePanel("Panel", `${rowId}TopRow`, row)
-		if (!topRow?.BIsLoaded()) {
+		const topRow = row.CreateChild("Panel", `${rowId}TopRow`)
+		if (topRow === undefined) {
 			return
 		}
 		setPanelStyle(topRow, [
@@ -280,8 +266,8 @@ export class DashboardSettingsPanel {
 			"flow-children: right",
 			"vertical-align: center"
 		])
-		const label = Panorama.CreatePanel<CLabel>("Label", `${rowId}Label`, topRow)
-		if (label?.BIsLoaded()) {
+		const label = topRow.CreateChild("Label", `${rowId}Label`)
+		if (label !== undefined) {
 			setPanelStyle(label, [
 				`width: ${SETTINGS_LABEL_WIDTH}`,
 				`height: ${SETTINGS_ROW_HEIGHT}`,
@@ -295,96 +281,41 @@ export class DashboardSettingsPanel {
 			])
 			label.SetText(localizeLabel(labelKey))
 		}
-		if (useList) {
-			this.createValuePanelWithList(
-				legendRoot,
-				row,
-				topRow,
-				rowId,
-				optionKeys,
-				getSelectedIndex,
-				onSelect
-			)
-		} else {
-			this.createValuePanel(
-				legendRoot,
-				topRow,
-				rowId,
-				optionKeys,
-				getSelectedIndex,
-				onSelect
-			)
-		}
-	}
-
-	private createValuePanel(
-		legendRoot: IUIPanel,
-		parent: IUIPanel,
-		rowId: string,
-		optionKeys: readonly string[],
-		getSelectedIndex: () => number,
-		onSelect: (index: number) => void
-	): void {
-		const valuePanel = Panorama.CreatePanel("Panel", `${rowId}Value`, parent)
-		if (!valuePanel?.BIsLoaded()) {
+		const valuePanel = this.createValuePanel(
+			topRow,
+			rowId,
+			optionKeys,
+			getSelectedIndex
+		)
+		if (valuePanel === undefined) {
 			return
 		}
-		valuePanel.SetAcceptsFocus(true)
-		valuePanel.SetActivationEnabled(true)
-		setPanelStyle(valuePanel, [
-			`width: ${SETTINGS_DROPDOWN_WIDTH}`,
-			`height: ${SETTINGS_DROPDOWN_HEIGHT}`,
-			"flow-children: right",
-			"vertical-align: center",
-			"background-color: rgba(40, 44, 52, 0.95)",
-			"border: 1px solid #4a5568",
-			"border-radius: 4px",
-			"padding: 2px 6px"
-		])
-		const valueLabel = Panorama.CreatePanel<CLabel>(
-			"Label",
-			`${rowId}ValueLabel`,
-			valuePanel
-		)
-		if (valueLabel?.BIsLoaded()) {
-			setPanelStyle(valueLabel, [
-				"width: fill",
-				"height: 100%",
-				`font-size: ${SETTINGS_VALUE_FONT_SIZE}`,
-				"color: #e2e8f0",
-				"text-align: left",
-				"vertical-align: center",
-				"text-overflow: shrink"
-			])
-			valueLabel.SetText(
-				localizeOption(optionKeys[getSelectedIndex()] ?? optionKeys[0])
-			)
-		}
+		const listPanel =
+			optionKeys.length > this.DROPDOWN_LIST_THRESHOLD
+				? this.createListPanel(row, rowId, optionKeys)
+				: undefined
 		this.settingsActions.set(rowId, {
-			type: "cycle",
+			type: listPanel !== undefined ? "list" : "cycle",
 			onSelect,
 			getSelectedIndex,
 			optionKeys,
-			legendRoot
+			legendRoot,
+			listPanel
 		})
-		this.registerValueHandler(valuePanel, rowId)
+		this.registerHandler(valuePanel, `${rowId}Value`)
 	}
 
-	private createValuePanelWithList(
-		legendRoot: IUIPanel,
-		row: IUIPanel,
-		topRow: IUIPanel,
+	private createValuePanel(
+		parent: Panel,
 		rowId: string,
 		optionKeys: readonly string[],
-		getSelectedIndex: () => number,
-		onSelect: (index: number) => void
-	): void {
-		const valuePanel = Panorama.CreatePanel("Panel", `${rowId}Value`, topRow)
-		if (!valuePanel?.BIsLoaded()) {
-			return
+		getSelectedIndex: () => number
+	): Nullable<Panel> {
+		const valuePanel = parent.CreateChild("Panel", `${rowId}Value`)
+		if (valuePanel === undefined) {
+			return undefined
 		}
-		valuePanel.SetAcceptsFocus(true)
-		valuePanel.SetActivationEnabled(true)
+		valuePanel.SetClickable(true)
 		setPanelStyle(valuePanel, [
 			`width: ${SETTINGS_DROPDOWN_WIDTH}`,
 			`height: ${SETTINGS_DROPDOWN_HEIGHT}`,
@@ -395,12 +326,8 @@ export class DashboardSettingsPanel {
 			"border-radius: 4px",
 			"padding: 2px 6px"
 		])
-		const valueLabel = Panorama.CreatePanel<CLabel>(
-			"Label",
-			`${rowId}ValueLabel`,
-			valuePanel
-		)
-		if (valueLabel?.BIsLoaded()) {
+		const valueLabel = valuePanel.CreateChild("Label", `${rowId}ValueLabel`)
+		if (valueLabel !== undefined) {
 			setPanelStyle(valueLabel, [
 				"width: fill",
 				"height: 100%",
@@ -414,9 +341,17 @@ export class DashboardSettingsPanel {
 				localizeOption(optionKeys[getSelectedIndex()] ?? optionKeys[0])
 			)
 		}
-		const listPanel = Panorama.CreatePanel("Panel", `${rowId}List`, row)
-		if (!listPanel?.BIsLoaded()) {
-			return
+		return valuePanel
+	}
+
+	private createListPanel(
+		row: Panel,
+		rowId: string,
+		optionKeys: readonly string[]
+	): Nullable<Panel> {
+		const listPanel = row.CreateChild("Panel", `${rowId}List`)
+		if (listPanel === undefined) {
+			return undefined
 		}
 		listPanel.SetVisible(false)
 		setPanelStyle(listPanel, [
@@ -432,16 +367,12 @@ export class DashboardSettingsPanel {
 			"overflow: clip"
 		])
 		for (let i = 0; i < optionKeys.length; i++) {
-			const optPanel = Panorama.CreatePanel(
-				"Panel",
-				`${rowId}ListOpt_${i}`,
-				listPanel
-			)
-			if (!optPanel?.BIsLoaded()) {
+			const optId = `${rowId}ListOpt_${i}`
+			const optPanel = listPanel.CreateChild("Panel", optId)
+			if (optPanel === undefined) {
 				continue
 			}
-			optPanel.SetAcceptsFocus(true)
-			optPanel.SetActivationEnabled(true)
+			optPanel.SetClickable(true)
 			setPanelStyle(optPanel, [
 				"width: 100%",
 				`height: ${SETTINGS_LIST_ITEM_HEIGHT}`,
@@ -449,12 +380,8 @@ export class DashboardSettingsPanel {
 				"padding: 2px 6px",
 				"background-color: transparent"
 			])
-			const optLabel = Panorama.CreatePanel<CLabel>(
-				"Label",
-				`${rowId}ListOptLabel_${i}`,
-				optPanel
-			)
-			if (optLabel?.BIsLoaded()) {
+			const optLabel = optPanel.CreateChild("Label", `${rowId}ListOptLabel_${i}`)
+			if (optLabel !== undefined) {
 				setPanelStyle(optLabel, [
 					"width: fill",
 					"height: 100%",
@@ -466,56 +393,42 @@ export class DashboardSettingsPanel {
 				])
 				optLabel.SetText(localizeOption(optionKeys[i]))
 			}
-			if (!this.handlers.has(`${rowId}ListOpt_${i}`)) {
-				const h = Panorama.RegisterEventHandler("Activated", optPanel, () =>
-					this.onSettingsActivated(optPanel)
-				)
-				this.handlers.set(`${rowId}ListOpt_${i}`, h)
-			}
+			this.registerHandler(optPanel, optId)
 		}
-		this.settingsActions.set(rowId, {
-			type: "list",
-			onSelect,
-			getSelectedIndex,
-			optionKeys,
-			legendRoot,
-			listPanel
-		})
-		this.registerValueHandler(valuePanel, rowId)
+		return listPanel
 	}
 
-	private updateRowLabels(legendRoot: IUIPanel): void {
+	private updateRowLabels(legendRoot: Panel): void {
 		for (const [rowId, labelKey] of Object.entries(SETTINGS_ROW_LABEL_KEYS)) {
-			const label = legendRoot.FindChildTraverse<CLabel>(`${rowId}Label`)
-			if (label?.BIsLoaded()) {
-				label.SetText(localizeLabel(labelKey))
-			}
+			this.rowOf(legendRoot, rowId)
+				?.FindChild(`${rowId}TopRow`)
+				?.FindChild(`${rowId}Label`)
+				?.SetText(localizeLabel(labelKey))
 		}
 		for (const [rowId, action] of this.settingsActions) {
-			if (action.type !== "list" || !action.listPanel?.BIsLoaded()) {
+			if (action.type !== "list" || action.listPanel === undefined) {
 				continue
 			}
-			const { optionKeys } = action
+			const { optionKeys, listPanel } = action
 			for (let i = 0; i < optionKeys.length; i++) {
-				const optLabel = legendRoot.FindChildTraverse<CLabel>(
-					`${rowId}ListOptLabel_${i}`
-				)
-				if (optLabel?.BIsLoaded()) {
-					optLabel.SetText(localizeOption(optionKeys[i]))
-				}
+				listPanel
+					.FindChild(`${rowId}ListOpt_${i}`)
+					?.FindChild(`${rowId}ListOptLabel_${i}`)
+					?.SetText(localizeOption(optionKeys[i]))
 			}
 		}
 	}
 
 	private updateRowSelection(
-		legendRoot: IUIPanel,
+		legendRoot: Panel,
 		rowId: string,
 		optionKeys: readonly string[],
 		selectedIndex: number
 	): void {
-		const valueLabel = legendRoot.FindChildTraverse<CLabel>(`${rowId}ValueLabel`)
-		if (valueLabel?.BIsLoaded()) {
-			valueLabel.SetText(localizeOption(optionKeys[selectedIndex] ?? optionKeys[0]))
-		}
+		this.rowOf(legendRoot, rowId)
+			?.FindChild(`${rowId}TopRow`)
+			?.FindChild(`${rowId}Value`)
+			?.FindChild(`${rowId}ValueLabel`)
+			?.SetText(localizeOption(optionKeys[selectedIndex] ?? optionKeys[0]))
 	}
 }

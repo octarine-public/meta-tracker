@@ -77,6 +77,5 @@ export const WIN_RATES_DIR = "win-rates"
 // Minimum matches required to show a tier (avoids noise from tiny samples)
 export const MIN_MATCHES_FOR_TIER = 100
 
-export const STYLE_SYMBOL = Panorama.MakeSymbol("style")
-export const HERO_ID_ATTR = Panorama.MakeSymbol("heroid")
-export const HERO_CARD_OVERLAYS_CLASS = Panorama.MakeSymbol("HeroCardOverlays")
+export const HERO_ID_ATTR = "heroid"
+export const HERO_CARD_OVERLAYS_CLASS = "HeroCardOverlays"

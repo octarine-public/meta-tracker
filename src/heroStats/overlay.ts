@@ -18,10 +18,10 @@ import {
 	WIN_RATE_PANEL_ID,
 	WIN_RATE_PANEL_WIDTH
 } from "../constants"
-import { isValidPanel, setPanelStyle } from "../panorama/utils"
+import { setPanelStyle } from "../panorama/utils"
 import { HeroStatsDataProvider } from "./types"
 
-function setLabelStyle(label: IUIPanel, color: string): void {
+function setLabelStyle(label: Panel, color: string): void {
 	setPanelStyle(label, [
 		"width: 100%",
 		"height: 100%",
@@ -36,8 +36,8 @@ function setLabelStyle(label: IUIPanel, color: string): void {
 export class HeroStatsOverlay {
 	constructor(private readonly data: HeroStatsDataProvider) {}
 
-	public ApplyToGrid(root: IUIPanel): void {
-		const cards = this.collectHeroCardPanels(root)
+	public ApplyToGrid(panoramaWindow: PanoramaWindow): void {
+		const cards = this.collectHeroCardPanels(panoramaWindow)
 		for (let i = cards.length - 1; i > -1; i--) {
 			const card = cards[i]
 			const heroID = this.getHeroIDFromCard(card)
@@ -51,38 +51,29 @@ export class HeroStatsOverlay {
 		}
 	}
 
-	private collectHeroCardPanels(root: IUIPanel): IUIPanel[] {
-		const cards: IUIPanel[] = []
-		const grid = root.FindChildTraverse("HeroGrid")
-		if (!isValidPanel(grid)) {
+	private collectHeroCardPanels(panoramaWindow: PanoramaWindow): Panel[] {
+		const cards: Panel[] = []
+		const grid = Source2SDK.Panorama.Find(panoramaWindow, "HeroGrid")
+		if (grid === undefined || !grid.IsVisible) {
 			return cards
 		}
-		const mainContents = grid.FindChild("MainContents")
-		if (!isValidPanel(mainContents)) {
+		const gridCategories = grid.FindChild("MainContents")?.FindChild("GridCategories")
+		if (gridCategories === undefined) {
 			return cards
 		}
-		const gridCategories = mainContents.FindChild("GridCategories")
-		if (!isValidPanel(gridCategories)) {
-			return cards
-		}
-		const n = gridCategories.GetChildCount()
+		const n = gridCategories.ChildCount
 		for (let i = 0; i < n; i++) {
-			const category = gridCategories.GetChild(i)
-			if (!category) {
+			const heroList = gridCategories
+				.Child(i)
+				?.Find("HeroListContainer")
+				?.FindChild("HeroList")
+			if (heroList === undefined) {
 				continue
 			}
-			const listContainer = category.FindChildTraverse("HeroListContainer")
-			if (!isValidPanel(listContainer)) {
-				continue
-			}
-			const heroList = listContainer.FindChild("HeroList")
-			if (!isValidPanel(heroList)) {
-				continue
-			}
-			const listCount = heroList.GetChildCount()
+			const listCount = heroList.ChildCount
 			for (let j = 0; j < listCount; j++) {
-				const card = heroList.GetChild(j)
-				if (card) {
+				const card = heroList.Child(j)
+				if (card !== undefined) {
 					cards.push(card)
 				}
 			}
@@ -90,17 +81,15 @@ export class HeroStatsOverlay {
 		return cards
 	}
 
-	private getHeroIDFromCard(card: IUIPanel): number | undefined {
-		const contents = card.FindChild("HeroCardContents")
-		const parent = contents ?? card
-		const heroID = parent.GetAttribute(HERO_ID_ATTR, "-1") // -1 is invalid hero ID
-		if (heroID === undefined || heroID === "-1") {
-			return undefined
-		}
-		return Number(heroID)
+	private getHeroIDFromCard(card: Panel): number | undefined {
+		const heroID = (card.FindChild("HeroCardContents") ?? card).Attribute(
+			HERO_ID_ATTR,
+			"-1"
+		)
+		return heroID === "-1" ? undefined : Number(heroID)
 	}
 	public applyToCard(
-		card: IUIPanel,
+		card: Panel,
 		winRatePct: number,
 		tier: Nullable<string>,
 		pickRatePct: number
@@ -108,37 +97,32 @@ export class HeroStatsOverlay {
 		if (winRatePct === 0 && tier === undefined && pickRatePct <= 0) {
 			return
 		}
-		const container = this.ensureOverlayContainer(card)
-		if (!container?.BIsLoaded()) {
+		const parent = this.getOverlayParent(card)
+		const container = this.ensureOverlayContainer(parent)
+		if (container === undefined) {
 			return
 		}
 		const state = this.data.isVisible()
 		container.SetVisible(state)
-		const bottomContainer = this.ensureBottomOverlayContainer(card)
-		if (bottomContainer?.BIsLoaded()) {
-			bottomContainer.SetVisible(state)
-		}
+		const bottomContainer = this.ensureBottomOverlayContainer(parent)
+		bottomContainer?.SetVisible(state)
 		if (!state) {
 			return
 		}
-		const winRateLabel = this.ensureWinRatePanel(container, winRatePct)
-		if (winRateLabel?.BIsLoaded()) {
-			winRateLabel.SetText(`${winRatePct.toFixed(0)}%`)
-		}
-		this.ensureTierPanel(container, tier)
-		const tierPanel = container.FindChildTraverse(TIER_PANEL_ID)
-		if (tierPanel?.BIsLoaded()) {
-			tierPanel.SetVisible(tier !== undefined && tier !== null)
-		}
-		if (bottomContainer?.BIsLoaded() && pickRatePct > 0) {
-			const pickRateLabel = this.ensurePickRatePanel(bottomContainer)
-			if (pickRateLabel?.BIsLoaded()) {
-				pickRateLabel.SetText(`${pickRatePct.toFixed(2)}%`)
-			}
+		this.ensureWinRatePanel(container, winRatePct)?.SetText(
+			`${winRatePct.toFixed(0)}%`
+		)
+		this.ensureTierPanel(container, tier)?.SetVisible(
+			tier !== undefined && tier !== null
+		)
+		if (bottomContainer !== undefined && pickRatePct > 0) {
+			this.ensurePickRatePanel(bottomContainer)?.SetText(
+				`${pickRatePct.toFixed(2)}%`
+			)
 		}
 	}
 
-	private getOverlayParent(card: IUIPanel): IUIPanel {
+	private getOverlayParent(card: Panel): Panel {
 		return (
 			card.FindChild("HeroCardOverlays") ??
 			card.FindChild("HeroCardContents") ??
@@ -146,17 +130,16 @@ export class HeroStatsOverlay {
 		)
 	}
 
-	private ensureOverlayContainer(card: IUIPanel): Nullable<IUIPanel> {
-		const parent = this.getOverlayParent(card)
-		let container = parent.FindChildTraverse(OVERLAY_CONTAINER_ID)
-		if (container?.BIsLoaded()) {
-			return container
+	private ensureOverlayContainer(parent: Panel): Nullable<Panel> {
+		const existing = parent.FindChild(OVERLAY_CONTAINER_ID)
+		if (existing !== undefined) {
+			return existing
 		}
-		container = Panorama.CreatePanel("Panel", OVERLAY_CONTAINER_ID, parent)
-		container?.AddClass(HERO_CARD_OVERLAYS_CLASS)
-		if (!container?.BIsLoaded()) {
+		const container = parent.CreateChild("Panel", OVERLAY_CONTAINER_ID)
+		if (container === undefined) {
 			return undefined
 		}
+		container.AddClass(HERO_CARD_OVERLAYS_CLASS)
 		setPanelStyle(container, [
 			"x: 4px",
 			"y: 4px",
@@ -167,14 +150,13 @@ export class HeroStatsOverlay {
 		return container
 	}
 
-	private ensureBottomOverlayContainer(card: IUIPanel): Nullable<IUIPanel> {
-		const parent = this.getOverlayParent(card)
-		let container = parent.FindChildTraverse(PICK_RATE_CONTAINER_ID)
-		if (container?.BIsLoaded()) {
-			return container
+	private ensureBottomOverlayContainer(parent: Panel): Nullable<Panel> {
+		const existing = parent.FindChild(PICK_RATE_CONTAINER_ID)
+		if (existing !== undefined) {
+			return existing
 		}
-		container = Panorama.CreatePanel("Panel", PICK_RATE_CONTAINER_ID, parent)
-		if (!container?.BIsLoaded()) {
+		const container = parent.CreateChild("Panel", PICK_RATE_CONTAINER_ID)
+		if (container === undefined) {
 			return undefined
 		}
 		setPanelStyle(container, [
@@ -199,17 +181,28 @@ export class HeroStatsOverlay {
 		return WIN_RATE_COLORS.high
 	}
 
-	private ensureWinRatePanel(
-		container: IUIPanel,
-		winRatePct: number
-	): Nullable<CLabel> {
-		let panel = container.FindChild(WIN_RATE_PANEL_ID)
-		if (!panel?.BIsLoaded()) {
-			panel = Panorama.CreatePanel("Panel", WIN_RATE_PANEL_ID, container)
-			if (!panel?.BIsLoaded()) {
-				return undefined
-			}
-			Panorama.CreatePanel("Label", WIN_RATE_LABEL_ID, panel)
+	private ensureLabeledPanel(
+		container: Panel,
+		id: string,
+		labelID: string
+	): Nullable<Panel> {
+		const existing = container.FindChild(id)
+		if (existing !== undefined) {
+			return existing
+		}
+		const panel = container.CreateChild("Panel", id)
+		panel?.CreateChild("Label", labelID)
+		return panel
+	}
+
+	private ensureWinRatePanel(container: Panel, winRatePct: number): Nullable<Panel> {
+		const panel = this.ensureLabeledPanel(
+			container,
+			WIN_RATE_PANEL_ID,
+			WIN_RATE_LABEL_ID
+		)
+		if (panel === undefined) {
+			return undefined
 		}
 		setPanelStyle(panel, [
 			`width: ${WIN_RATE_PANEL_WIDTH}`,
@@ -218,24 +211,17 @@ export class HeroStatsOverlay {
 			"border-radius: 1px",
 			"z-index: 10"
 		])
-		const label = panel.FindChild(WIN_RATE_LABEL_ID) as Nullable<CLabel>
-		if (label?.BIsLoaded()) {
+		const label = panel.FindChild(WIN_RATE_LABEL_ID)
+		if (label !== undefined) {
 			setLabelStyle(label, this.getWinRateTextColor(winRatePct))
 		}
-		return label ?? undefined
+		return label
 	}
 
-	private ensureTierPanel(
-		container: IUIPanel,
-		tier: string | undefined
-	): Nullable<CLabel> {
-		let panel = container.FindChild(TIER_PANEL_ID)
-		if (!panel?.BIsLoaded()) {
-			panel = Panorama.CreatePanel("Panel", TIER_PANEL_ID, container)
-			if (!panel?.BIsLoaded()) {
-				return undefined
-			}
-			Panorama.CreatePanel("Label", TIER_LABEL_ID, panel)
+	private ensureTierPanel(container: Panel, tier: Nullable<string>): Nullable<Panel> {
+		const panel = this.ensureLabeledPanel(container, TIER_PANEL_ID, TIER_LABEL_ID)
+		if (panel === undefined) {
+			return undefined
 		}
 		setPanelStyle(panel, [
 			`width: ${TIER_PANEL_WIDTH}`,
@@ -246,22 +232,22 @@ export class HeroStatsOverlay {
 			"vertical-align: center",
 			"z-index: 10"
 		])
-		const label = panel.FindChild(TIER_LABEL_ID) as Nullable<CLabel>
-		if (label?.BIsLoaded()) {
+		const label = panel.FindChild(TIER_LABEL_ID)
+		if (label !== undefined) {
 			setLabelStyle(label, "#ffffff")
 			label.SetText(tier ?? "")
 		}
-		return label ?? undefined
+		return panel
 	}
 
-	private ensurePickRatePanel(container: IUIPanel): Nullable<CLabel> {
-		let panel = container.FindChild(PICK_RATE_PANEL_ID)
-		if (!panel?.BIsLoaded()) {
-			panel = Panorama.CreatePanel("Panel", PICK_RATE_PANEL_ID, container)
-			if (!panel?.BIsLoaded()) {
-				return undefined
-			}
-			Panorama.CreatePanel("Label", PICK_RATE_LABEL_ID, panel)
+	private ensurePickRatePanel(container: Panel): Nullable<Panel> {
+		const panel = this.ensureLabeledPanel(
+			container,
+			PICK_RATE_PANEL_ID,
+			PICK_RATE_LABEL_ID
+		)
+		if (panel === undefined) {
+			return undefined
 		}
 		setPanelStyle(panel, [
 			`width: ${PICK_RATE_PANEL_WIDTH}`,
@@ -272,10 +258,10 @@ export class HeroStatsOverlay {
 			"vertical-align: center",
 			"z-index: 10"
 		])
-		const label = panel.FindChild(PICK_RATE_LABEL_ID) as Nullable<CLabel>
-		if (label?.BIsLoaded()) {
+		const label = panel.FindChild(PICK_RATE_LABEL_ID)
+		if (label !== undefined) {
 			setLabelStyle(label, PICK_RATE_COLOR)
 		}
-		return label ?? undefined
+		return label
 	}
 }

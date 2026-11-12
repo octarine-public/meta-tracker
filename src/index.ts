@@ -11,7 +11,6 @@ import {
 import { HeroStatsDataProvider, HeroStatsOverlay } from "./heroStats/index"
 import { MenuManager } from "./menu"
 import { HeroDataResponse } from "./models/heroDataTypes"
-import { isValidPanel } from "./panorama/utils"
 import { TierLegendPanel, TierLegendPanelVisibility } from "./tierLegend/index"
 import {
 	getCurrentHeroPosition,
@@ -23,6 +22,7 @@ import {
 
 new (class CMetaTracker {
 	private isDestroyingHUD = false
+	private isRendering = false
 	private readonly menu = new MenuManager()
 	private readonly dataProvider = this.createHeroStatsDataProvider()
 	private readonly tierLegendVisibility = this.createTierLegendVisibility()
@@ -36,7 +36,10 @@ new (class CMetaTracker {
 		EventsSDK.on("PanoramaFrame", this.PanoramaFrame.bind(this))
 		EventsSDK.on("PanoramaWindowDestroy", this.PanoramaWindowDestroy.bind(this))
 		EventsSDK.on("PanoramaWindowCreate", this.PanoramaWindowCreate.bind(this))
-		Source2SDK.NativeEvents.on("DOTAFullHeroGlobalDataUpdated", this.GlobalDataUpdated.bind(this))
+		Source2SDK.NativeEvents.on(
+			"DOTAFullHeroGlobalDataUpdated",
+			this.GlobalDataUpdated.bind(this)
+		)
 
 		EventsSDK.on("GameEnded", this.rerenderPanorama.bind(this))
 		EventsSDK.on("GameStarted", this.rerenderPanorama.bind(this))
@@ -67,24 +70,20 @@ new (class CMetaTracker {
 	}
 	private applyWinRatesToHeroGrid(uiState: DOTAGameUIState = GameState.UIState): void {
 		const isDashboard = uiState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
-		const root = !isDashboard
-			? Panorama.FindRootPanel("DotaHud")
-			: Panorama.FindRootPanel("DotaDashboard")
-		if (!isValidPanel(root)) {
-			return
-		}
 		if (this.isDestroyingHUD && !isDashboard) {
 			return
 		}
-		this.heroStatsOverlay.ApplyToGrid(root)
+		const panoramaWindow = isDashboard ? PanoramaWindow.Dashboard : PanoramaWindow.Hud
+		if (Source2SDK.Panorama.Root(panoramaWindow)?.Rect !== undefined) {
+			this.heroStatsOverlay.ApplyToGrid(panoramaWindow)
+		}
 	}
 	private applyInformation(): void {
-		const root = Panorama.FindRootPanel("DotaDashboard")
-		if (!isValidPanel(root)) {
-			return
-		}
-		const heroesPage = root.FindChildTraverse("DOTAHeroesPage")
-		if (isValidPanel(heroesPage)) {
+		const heroesPage = Source2SDK.Panorama.Find(
+			PanoramaWindow.Dashboard,
+			"DOTAHeroesPage"
+		)
+		if (heroesPage?.Rect !== undefined) {
 			this.tierLegendPanel.ensurePanel(heroesPage)
 		}
 	}
@@ -141,19 +140,24 @@ new (class CMetaTracker {
 	}
 	private rerenderPanorama(): void {
 		const isDashboard = GameState.UIState !== DOTAGameUIState.DOTA_GAME_UI_DOTA_INGAME
-		if (Dota2SDK.GameRules !== undefined && !isDashboard && Dota2SDK.GameRules.IsInGame) {
+		if (
+			Dota2SDK.GameRules !== undefined &&
+			!isDashboard &&
+			Dota2SDK.GameRules.IsInGame
+		) {
 			return
 		}
-		Panorama.EnterMainThread()
-			.then(() => {
-				if (isDashboard) {
-					this.applyInformation()
-				}
-				this.applyWinRatesToHeroGrid()
-				void Panorama.LeaveMainThread()
-			})
-			.catch(error => {
-				console.error(error)
-			})
+		if (this.isRendering) {
+			return
+		}
+		this.isRendering = true
+		MainThread.Queue(() => {
+			if (isDashboard) {
+				this.applyInformation()
+			}
+			this.applyWinRatesToHeroGrid()
+		})
+			.catch(error => console.error(error))
+			.finally(() => (this.isRendering = false))
 	}
 })()
