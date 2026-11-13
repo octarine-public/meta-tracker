@@ -18,7 +18,6 @@ export class DotaPlusMenu {
 	public setRankIndex(index: number): void {
 		this.winRateRankDropdown.SelectedID = index
 		this.syncRankChunk()
-		Menu.Base.SaveConfigASAP = true
 	}
 
 	public get RankIndex(): number {

@@ -58,17 +58,14 @@ export class StratzMenu {
 	public setPeriodIndex(index: number): void {
 		this.winRatePeriodDropdown.SelectedID = index
 		this.syncStateFromMenu()
-		Menu.Base.SaveConfigASAP = true
 	}
 	public setRankIndex(index: number): void {
 		this.winRateRankDropdown.SelectedID = index
 		this.syncStateFromMenu()
-		Menu.Base.SaveConfigASAP = true
 	}
 	public setPositionIndex(index: number): void {
 		this.winRatePositionDropdown.SelectedID = index
 		this.syncStateFromMenu()
-		Menu.Base.SaveConfigASAP = true
 	}
 	private syncStateFromMenu(): void {
 		if (
